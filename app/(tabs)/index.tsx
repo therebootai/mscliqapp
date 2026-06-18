@@ -1,98 +1,102 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import HeroSlider from "@/components/homepage/heroSlider";
+import CategorySlider from "@/components/homepage/categorySlider";
+import CategoryProductSection from "@/components/homepage/categoryProductSection";
+import Footer from "@/components/homepage/footer";
+import { StyleSheet, ScrollView, View, Dimensions } from "react-native";
+import { useEffect, useState } from "react";
+import { ENDPOINTS } from "@/config/api";
+import { Image } from "expo-image";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-export default function HomeScreen() {
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  imageUrl: string;
+}
+
+export default function homepage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetch(`${ENDPOINTS.CATEGORIES}?parentCategoryId=null`)
+      .then((res) => res.json())
+      .then((data) => {
+        const categoryData = data.data || data;
+        if (Array.isArray(categoryData)) {
+          setCategories(categoryData);
+        }
+      })
+      .catch((err) => console.error("Error fetching categories for homepage:", err));
+  }, []);
+
+  // Separate Monitors from the rest
+  const monitorsCategory = categories.find((cat) => cat.name.toLowerCase() === "monitors");
+  const otherCategories = categories.filter((cat) => cat.name.toLowerCase() !== "monitors");
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <HeroSlider />
+      <CategorySlider />
+      
+      <View style={styles.sectionsContainer}>
+        {/* Render Monitors first if it exists */}
+        {monitorsCategory && (
+          <CategoryProductSection category={monitorsCategory} />
+        )}
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {/* Static Banner Image */}
+        <View style={styles.bannerContainer}>
+          <Image 
+            source={require("@/assets/images/static1.avif")} 
+            style={styles.banner1Image}
+            contentFit="cover"
+            transition={500}
+          />
+        </View>
+
+        {/* Render the next 4 categories */}
+        {otherCategories.slice(0, 4).map((category) => (
+          <CategoryProductSection key={category._id} category={category} />
+        ))}
+      </View>
+
+      <View style={styles.bannerContainer}>
+          <Image 
+            source={require("@/assets/images/static2.avif")} 
+            style={styles.banner2Image}
+            contentFit="cover"
+            transition={500}
+          />
+      </View>
+
+      <Footer />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  sectionsContainer: {
+    paddingBottom: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  bannerContainer: {
+    width: "100%",
+    paddingHorizontal: 15,
+    marginVertical: 10,
   },
+  banner1Image: {
+    width: "100%",
+    height: SCREEN_WIDTH * 0.7, 
+    borderRadius: 12,
+  },
+  banner2Image: {
+    width: "100%",
+    height: SCREEN_WIDTH * 0.6, 
+    borderRadius: 12,
+  }
 });
