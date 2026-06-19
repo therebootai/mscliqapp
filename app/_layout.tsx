@@ -12,8 +12,12 @@ export const unstable_settings = {
 
 import { DrawerProvider } from '@/components/ui/drawer';
 import { WishlistProvider } from '@/context/WishlistContext';
+import { useAuthStore } from '@/store/authStore';
 
 export default function RootLayout() {
+  useEffect(() => {
+    useAuthStore.getState().initialize();
+  }, []);
 
   return (
     <ThemeProvider value={DefaultTheme}>
@@ -21,6 +25,7 @@ export default function RootLayout() {
         <DrawerProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="profile" options={{ headerShown: false }} />
             <Stack.Screen name="wishlist" options={{ title: 'Wishlist', headerBackTitle: 'Back' }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>

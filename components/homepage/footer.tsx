@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   rebootText: {
-    color: "#00E379",
+    color: "#0080FE",
     fontWeight: "bold",
     fontSize: 24,
   },
