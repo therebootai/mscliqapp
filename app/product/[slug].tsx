@@ -7,11 +7,13 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Pressable } from 'react-native';
 import { useCartStore } from '@/store/useCartStore';
+import { useToastStore } from '@/store/useToastStore';
 
 export default function ProductPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const { addItem } = useCartStore();
+  const { showToast } = useToastStore();
   
   const [loading, setLoading] = useState(true);
   const [productData, setProductData] = useState<any>(null);
@@ -78,7 +80,7 @@ export default function ProductPage() {
       stock: variant.stocks,
       effectiveTax: productData.effectiveTax,
     });
-    Alert.alert('Added to Cart', 'Product successfully added to your cart.');
+    showToast('Added to Cart', 'success');
   };
 
   return (
@@ -91,7 +93,7 @@ export default function ProductPage() {
       <ProductView 
         data={productData} 
         onAddToCart={handleAddToCart}
-        onBuyNow={() => Alert.alert('Info', 'Proceeding to checkout')}
+        onBuyNow={() => showToast('Proceeding to checkout', 'info')}
       />
     </View>
   );

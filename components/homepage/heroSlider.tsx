@@ -11,18 +11,29 @@ const SLIDER_DATA = [
   { id: "2", image: require("@/assets/images/slider2.avif") },
 ];
 
+const EXTENDED_SLIDER_DATA = Array(100).fill(SLIDER_DATA).flat();
+
 export default function HeroSlider() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const nextIndex = (currentIndex + 1) % SLIDER_DATA.length;
-      setCurrentIndex(nextIndex);
-      flatListRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
-      });
+      const nextIndex = currentIndex + 1;
+      
+      if (nextIndex >= EXTENDED_SLIDER_DATA.length) {
+        setCurrentIndex(0);
+        flatListRef.current?.scrollToIndex({
+          index: 0,
+          animated: false,
+        });
+      } else {
+        setCurrentIndex(nextIndex);
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+      }
     }, 5000); 
 
     return () => clearInterval(interval);
@@ -33,7 +44,6 @@ export default function HeroSlider() {
       source={item.image}
       style={styles.sliderImage}
       contentFit="cover"
-      transition={1000}
     />
   );
 
@@ -42,9 +52,9 @@ export default function HeroSlider() {
       <ThemedView>
         <FlatList
           ref={flatListRef}
-          data={SLIDER_DATA}
+          data={EXTENDED_SLIDER_DATA}
           renderItem={renderSliderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
@@ -57,15 +67,18 @@ export default function HeroSlider() {
           style={styles.slider}
         />
         <View style={styles.pagination}>
-          {SLIDER_DATA.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                currentIndex === index ? styles.activeDot : styles.inactiveDot,
-              ]}
-            />
-          ))}
+          {SLIDER_DATA.map((_, index) => {
+            const activeIndex = currentIndex % SLIDER_DATA.length;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  activeIndex === index ? styles.activeDot : styles.inactiveDot,
+                ]}
+              />
+            );
+          })}
         </View>
       </ThemedView>
     </ThemedView>

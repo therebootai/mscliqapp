@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useWishlist } from "@/context/WishlistContext";
 import { useCartStore } from "@/store/useCartStore";
+import { useToastStore } from "@/store/useToastStore";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 40) / 2; // (Screen - 2*15 padding - 10 gap) / 2
@@ -39,6 +40,7 @@ export interface Product {
 import { Link } from "expo-router";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const { showToast } = useToastStore();
   const rating = product.ratings?.average || 0;
   const reviews = product.ratings?.count || 0;
   
@@ -68,7 +70,7 @@ export default function ProductCard({ product }: { product: Product }) {
       mrp: mrp,
       effectiveTax: product.taxes,
     });
-    Alert.alert("Added to Cart", "Product successfully added to your cart.");
+    showToast("Added to Cart", "success");
   };
 
   return (
@@ -89,7 +91,10 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
           <Pressable 
             style={styles.wishlistBtn}
-            onPress={() => toggleWishlist(product)}
+            onPress={() => {
+              toggleWishlist(product);
+              showToast(inWishlist ? "Removed from Wishlist" : "Added to Wishlist", "success");
+            }}
           >
             <IconSymbol 
               name={inWishlist ? "heart.fill" : "heart"} 

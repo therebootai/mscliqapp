@@ -13,6 +13,7 @@ export const unstable_settings = {
 import { DrawerProvider } from '@/components/ui/drawer';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { useAuthStore } from '@/store/authStore';
+import Toast from '@/components/ui/Toast';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function RootLayout() {
             <Stack.Screen name="wishlist" options={{ title: 'Wishlist', headerBackTitle: 'Back' }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
+          <Toast />
           <StatusBar style="light" />
         </DrawerProvider>
       </WishlistProvider>

@@ -31,35 +31,48 @@ export default function CategorySlider() {
       .catch((err) => console.error("Error fetching categories:", err));
   }, []);
 
+  // Create a large array to simulate infinite scrolling
+  const extendedCategories = categories.length > 0 ? Array(100).fill(categories).flat() : [];
+
   useEffect(() => {
-    if (categories.length === 0) return;
+    if (extendedCategories.length === 0) return;
 
     const interval = setInterval(() => {
-      const nextIndex = (currentIndex + 1) % categories.length;
-      setCurrentIndex(nextIndex);
-      flatListRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
-      });
+      const nextIndex = currentIndex + 1;
+      
+      // If we somehow reach the very end, silently snap back to the start
+      if (nextIndex >= extendedCategories.length) {
+        setCurrentIndex(0);
+        flatListRef.current?.scrollToIndex({
+          index: 0,
+          animated: false,
+        });
+      } else {
+        setCurrentIndex(nextIndex);
+        flatListRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+      }
     }, 3000); // Auto-scroll every 3 seconds
 
     return () => clearInterval(interval);
-  }, [currentIndex, categories.length]);
+  }, [currentIndex, extendedCategories.length]);
 
   if (categories.length === 0) return null;
 
-  // Calculate pages for dots (showing which group of 3 is mostly visible)
+  // Calculate pages for dots (showing which group of 3 is mostly visible, modulo real length)
   const totalPages = Math.ceil(categories.length / 3);
-  const activePage = Math.floor(currentIndex / 3);
+  const activePage = Math.floor((currentIndex % categories.length) / 3);
 
   return (
     <View style={styles.categorySection}>
       <FlatList
         ref={flatListRef}
-        data={categories}
+        data={extendedCategories}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => `${item._id}-${index}`}
         contentContainerStyle={styles.categoryList}
         decelerationRate="fast"
         snapToInterval={ITEM_WIDTH}
