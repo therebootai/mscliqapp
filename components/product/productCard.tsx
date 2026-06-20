@@ -34,6 +34,8 @@ export interface Product {
   default_slug: string;
 }
 
+import { Link } from "expo-router";
+
 export default function ProductCard({ product }: { product: Product }) {
   const rating = product.ratings?.average || 0;
   const reviews = product.ratings?.count || 0;
@@ -52,86 +54,88 @@ export default function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <View style={styles.card}>
-      {/* Image Area */}
-      <View style={styles.imageArea}>
-        <Image
-          source={{ uri: product.coverImage?.url }}
-          style={styles.image}
-          contentFit="contain"
-          transition={500}
-        />
-        {product.isNew && (
-          <View style={styles.newBadge}>
-            <ThemedText style={styles.newBadgeText}>NEW</ThemedText>
-          </View>
-        )}
-        <Pressable 
-          style={styles.wishlistBtn}
-          onPress={() => toggleWishlist(product)}
-        >
-          <IconSymbol 
-            name={inWishlist ? "heart.fill" : "heart"} 
-            size={18} 
-            color={inWishlist ? "#EE0000" : "#222222"} 
+    <Link href={`/product/${product.default_slug}`} asChild>
+      <Pressable style={styles.card}>
+        {/* Image Area */}
+        <View style={styles.imageArea}>
+          <Image
+            source={{ uri: product.coverImage?.url }}
+            style={styles.image}
+            contentFit="contain"
+            transition={500}
           />
-        </Pressable>
-      </View>
-
-      {/* Content Area */}
-      <View style={styles.contentArea}>
-        <View>
-          <ThemedText style={styles.brandText} numberOfLines={1}>
-            {product.brandId?.name || "Brand"} {product.categoryId?.name && `· ${product.categoryId.name}`}
-          </ThemedText>
-
-          <ThemedText style={styles.title} numberOfLines={2}>
-            {product.title}
-          </ThemedText>
-        </View>
-
-        {/* Reviews */}
-        <View style={styles.ratingRow}>
-          <View style={styles.stars}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <IconSymbol
-                key={star}
-                name={star <= Math.floor(rating) ? "star.fill" : "star"}
-                size={12}
-                color={star <= Math.floor(rating) ? "#FFB800" : "#BBBBBB"}
-              />
-            ))}
-          </View>
-          <ThemedText style={styles.reviewsText}>({reviews})</ThemedText>
-        </View>
-
-        {/* Price Row */}
-        <View style={styles.priceRow}>
-          <View style={styles.priceLeft}>
-            <ThemedText style={styles.price}>
-              ₹{price.toLocaleString()}
-            </ThemedText>
-            {mrp > price && (
-              <ThemedText style={styles.mrp}>
-                ₹{mrp.toLocaleString()}
-              </ThemedText>
-            )}
-          </View>
-          {discount > 0 && (
-            <View style={styles.discountBadge}>
-              <ThemedText style={styles.discount}>
-                {discount}% OFF
-              </ThemedText>
+          {product.isNew && (
+            <View style={styles.newBadge}>
+              <ThemedText style={styles.newBadgeText}>NEW</ThemedText>
             </View>
           )}
+          <Pressable 
+            style={styles.wishlistBtn}
+            onPress={() => toggleWishlist(product)}
+          >
+            <IconSymbol 
+              name={inWishlist ? "heart.fill" : "heart"} 
+              size={18} 
+              color={inWishlist ? "#EE0000" : "#222222"} 
+            />
+          </Pressable>
         </View>
 
-        {/* Cart Button */}
-        <Pressable style={styles.cartBtn}>
-          <ThemedText style={styles.cartBtnText}>ADD TO CART</ThemedText>
-        </Pressable>
-      </View>
-    </View>
+        {/* Content Area */}
+        <View style={styles.contentArea}>
+          <View>
+            <ThemedText style={styles.brandText} numberOfLines={1}>
+              {product.brandId?.name || "Brand"} {product.categoryId?.name && `· ${product.categoryId.name}`}
+            </ThemedText>
+
+            <ThemedText style={styles.title} numberOfLines={2}>
+              {product.title}
+            </ThemedText>
+          </View>
+
+          {/* Reviews */}
+          <View style={styles.ratingRow}>
+            <View style={styles.stars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <IconSymbol
+                  key={star}
+                  name={star <= Math.floor(rating) ? "star.fill" : "star"}
+                  size={12}
+                  color={star <= Math.floor(rating) ? "#FFB800" : "#BBBBBB"}
+                />
+              ))}
+            </View>
+            <ThemedText style={styles.reviewsText}>({reviews})</ThemedText>
+          </View>
+
+          {/* Price Row */}
+          <View style={styles.priceRow}>
+            <View style={styles.priceLeft}>
+              <ThemedText style={styles.price}>
+                ₹{price.toLocaleString()}
+              </ThemedText>
+              {mrp > price && (
+                <ThemedText style={styles.mrp}>
+                  ₹{mrp.toLocaleString()}
+                </ThemedText>
+              )}
+            </View>
+            {discount > 0 && (
+              <View style={styles.discountBadge}>
+                <ThemedText style={styles.discount}>
+                  {discount}% OFF
+                </ThemedText>
+              </View>
+            )}
+          </View>
+
+          {/* Cart Button */}
+          <Pressable style={styles.cartBtn}>
+            <ThemedText style={styles.cartBtnText}>ADD TO CART</ThemedText>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Link>
   );
 }
 

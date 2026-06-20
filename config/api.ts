@@ -4,5 +4,8 @@ export const BASE_URL = API_BASE_URL;
 export const ENDPOINTS = {
   CATEGORIES: `${API_BASE_URL}/categories`,
   PRODUCTS_BY_CATEGORY: `${API_BASE_URL}/products/category`,
+  VARIANT_BY_SLUG: `${API_BASE_URL}/variants/slug`,
+  REVIEWS_BY_PRODUCT: `${API_BASE_URL}/review/product`,
+  COURIER_SERVICEABILITY: `${API_BASE_URL}/courier/serviceability`,
   // Add other endpoints here as needed
 };
