@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useDrawer } from '@/components/ui/drawer';
 import { useRouter } from 'expo-router';
+import { useWishlist } from '@/context/WishlistContext';
 
 export function Header() {
   const navigation = useNavigation();
@@ -15,6 +16,9 @@ export function Header() {
   const insets = useSafeAreaInsets();
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
+  
+  const { wishlist } = useWishlist();
+  const wishlistCount = wishlist.length;
 
   const themeColors = Colors.light;
 
@@ -46,6 +50,13 @@ export function Header() {
             style={styles.iconButton}
           >
             <IconSymbol name="heart" size={24} color={themeColors.text} />
+            {wishlistCount > 0 && (
+              <View style={styles.badgeContainer}>
+                <ThemedText style={styles.badgeText}>
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </ThemedText>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -112,6 +123,33 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 8,
+    position: 'relative',
+  },
+  badgeContainer: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#EE0000',
+    borderRadius: 10,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    zIndex: 1,
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    includeFontPadding: false,
+    lineHeight: 10,
+    ...Platform.select({
+      ios: {
+        marginTop: 1,
+      },
+    }),
   },
   searchRow: {
     paddingHorizontal: 15,

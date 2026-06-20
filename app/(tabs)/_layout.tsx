@@ -7,7 +7,12 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Header } from '@/components/ui/header';
 
+import { useCartStore } from '@/store/useCartStore';
+
 export default function TabLayout() {
+  const { items } = useCartStore();
+  const cartCount = items.length;
+
   return (
     <Tabs
       screenOptions={{
@@ -42,6 +47,8 @@ export default function TabLayout() {
         options={{
           title: 'Cart',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart.fill" color={color} />,
+          tabBarBadge: cartCount > 0 ? cartCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#EE0000', fontSize: 10 },
         }}
       />
     </Tabs>

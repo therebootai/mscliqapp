@@ -6,10 +6,12 @@ import { ENDPOINTS } from '@/config/api';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Pressable } from 'react-native';
+import { useCartStore } from '@/store/useCartStore';
 
 export default function ProductPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const { addItem } = useCartStore();
   
   const [loading, setLoading] = useState(true);
   const [productData, setProductData] = useState<any>(null);
@@ -60,6 +62,25 @@ export default function ProductPage() {
     );
   }
 
+  const handleAddToCart = () => {
+    if (!productData?.currentVariant || !productData?.currentVariant?.productId) return;
+    
+    const variant = productData.currentVariant;
+    const product = variant.productId;
+    
+    addItem({
+      variantId: product._id,
+      quantity: 1,
+      title: variant.title,
+      image: variant.coverImage?.url,
+      price: variant.price,
+      mrp: variant.mrp,
+      stock: variant.stocks,
+      effectiveTax: productData.effectiveTax,
+    });
+    Alert.alert('Added to Cart', 'Product successfully added to your cart.');
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen 
@@ -69,7 +90,7 @@ export default function ProductPage() {
       />
       <ProductView 
         data={productData} 
-        onAddToCart={() => Alert.alert('Success', 'Added to cart')}
+        onAddToCart={handleAddToCart}
         onBuyNow={() => Alert.alert('Info', 'Proceeding to checkout')}
       />
     </View>

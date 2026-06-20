@@ -1,8 +1,9 @@
-import { StyleSheet, View, Pressable, Dimensions } from "react-native";
+import { StyleSheet, View, Pressable, Dimensions, Alert } from "react-native";
 import { Image } from "expo-image";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useWishlist } from "@/context/WishlistContext";
+import { useCartStore } from "@/store/useCartStore";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 40) / 2; // (Screen - 2*15 padding - 10 gap) / 2
@@ -32,6 +33,7 @@ export interface Product {
   };
   isNew?: boolean;
   default_slug: string;
+  taxes?: { name: string; slab: number }[];
 }
 
 import { Link } from "expo-router";
@@ -52,6 +54,22 @@ export default function ProductCard({ product }: { product: Product }) {
   if (discount === 0 && mrp > price) {
     discount = Math.round(((mrp - price) / mrp) * 100);
   }
+
+  const { addItem, items, updateQuantity, removeItem } = useCartStore();
+  const cartItem = items.find(i => i.variantId === product._id);
+
+  const handleAddToCart = () => {
+    addItem({
+      variantId: product._id,
+      quantity: 1,
+      title: product.title,
+      image: product.coverImage?.url,
+      price: price,
+      mrp: mrp,
+      effectiveTax: product.taxes,
+    });
+    Alert.alert("Added to Cart", "Product successfully added to your cart.");
+  };
 
   return (
     <Link href={`/product/${product.default_slug}`} asChild>
@@ -129,10 +147,34 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </View>
 
-          {/* Cart Button */}
-          <Pressable style={styles.cartBtn}>
-            <ThemedText style={styles.cartBtnText}>ADD TO CART</ThemedText>
-          </Pressable>
+          {/* Cart Button or Qty Control */}
+          {cartItem ? (
+            <View style={styles.quantityContainer}>
+              <Pressable 
+                style={styles.qtyBtn} 
+                onPress={() => {
+                  if (cartItem.quantity > 1) {
+                    updateQuantity(product._id, cartItem.quantity - 1);
+                  } else {
+                    removeItem(product._id);
+                  }
+                }}
+              >
+                <ThemedText style={styles.qtyBtnText}>-</ThemedText>
+              </Pressable>
+              <ThemedText style={styles.qtyText}>{cartItem.quantity}</ThemedText>
+              <Pressable 
+                style={styles.qtyBtn} 
+                onPress={() => updateQuantity(product._id, cartItem.quantity + 1)}
+              >
+                <ThemedText style={styles.qtyBtnText}>+</ThemedText>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={styles.cartBtn} onPress={handleAddToCart}>
+              <ThemedText style={styles.cartBtnText}>ADD TO CART</ThemedText>
+            </Pressable>
+          )}
         </View>
       </Pressable>
     </Link>
@@ -274,5 +316,32 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
     letterSpacing: 0.5,
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#D3D3D3',
+    borderRadius: 8,
+    marginTop: 4,
+    height: 38,
+  },
+  qtyBtn: {
+    width: 38,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qtyBtnText: {
+    fontSize: 18,
+    color: '#000',
+    fontWeight: 'bold',
+  },
+  qtyText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
