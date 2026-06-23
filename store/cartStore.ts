@@ -133,6 +133,7 @@ export const useCartStore = create<CartState>()(
         
         set({ items: newItems, isDirty: true, appliedCoupon: null });
         get().showToast(`Added ${product.title} to cart`);
+        get().syncToBackend().catch((e) => console.error('Sync to backend failed:', e));
       },
 
       removeFromCart: (variantId) => {
@@ -146,6 +147,7 @@ export const useCartStore = create<CartState>()(
         if (itemToRemove) {
           get().showToast(`Removed from cart`);
         }
+        get().syncToBackend().catch((e) => console.error('Sync to backend failed:', e));
       },
 
       updateQuantity: (variantId, quantity) => {
@@ -168,6 +170,7 @@ export const useCartStore = create<CartState>()(
           isDirty: true,
           appliedCoupon: null,
         });
+        get().syncToBackend().catch((e) => console.error('Sync to backend failed:', e));
       },
 
       clearCart: async () => {

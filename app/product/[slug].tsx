@@ -6,13 +6,13 @@ import { ENDPOINTS } from '@/config/api';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Pressable } from 'react-native';
-import { useCartStore } from '@/store/useCartStore';
+import { useCartStore } from '@/store/cartStore';
 import { useToastStore } from '@/store/useToastStore';
 
 export default function ProductPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
-  const { addItem } = useCartStore();
+  const { addToCart } = useCartStore();
   const { showToast } = useToastStore();
   
   const [loading, setLoading] = useState(true);
@@ -70,14 +70,16 @@ export default function ProductPage() {
     const variant = productData.currentVariant;
     const product = variant.productId;
     
-    addItem({
-      variantId: product._id,
-      quantity: 1,
+    addToCart(variant._id, {
+      _id: product._id,
       title: variant.title,
-      image: variant.coverImage?.url,
+      image: variant.coverImage?.url || "",
       price: variant.price,
       mrp: variant.mrp,
-      stock: variant.stocks,
+      discount: variant.discount,
+      categoryName: product.categoryId?.name,
+      stocks: variant.stocks,
+      slug: variant.slug,
       effectiveTax: productData.effectiveTax,
     });
     showToast('Added to Cart', 'success');

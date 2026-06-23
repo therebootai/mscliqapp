@@ -2,11 +2,11 @@ import { StyleSheet, View, FlatList } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import ProductCard from '@/components/product/productCard';
-import { useWishlist } from '@/context/WishlistContext';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { Link } from 'expo-router';
 
 export default function WishlistScreen() {
-  const { wishlist } = useWishlist();
+  const wishlist = useWishlistStore((state) => state.items);
 
   if (wishlist.length === 0) {
     return (

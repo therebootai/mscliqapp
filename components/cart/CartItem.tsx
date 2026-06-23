@@ -3,20 +3,20 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { CartItem as CartItemType, useCartStore } from '@/store/useCartStore';
+import { CartItem as CartItemType, useCartStore } from '@/store/cartStore';
 
 interface CartItemProps {
   item: CartItemType;
 }
 
 export default function CartItem({ item }: CartItemProps) {
-  const { updateQuantity, removeItem } = useCartStore();
+  const { updateQuantity, removeFromCart } = useCartStore();
 
   const handleDecrease = () => {
     if (item.quantity > 1) {
       updateQuantity(item.variantId, item.quantity - 1);
     } else {
-      removeItem(item.variantId);
+      removeFromCart(item.variantId);
     }
   };
 
@@ -27,23 +27,23 @@ export default function CartItem({ item }: CartItemProps) {
   return (
     <View style={styles.container}>
       <Image 
-        source={{ uri: item.image }} 
+        source={{ uri: item.product.image }} 
         style={styles.image} 
         contentFit="cover" 
       />
       
       <View style={styles.details}>
         <View style={styles.headerRow}>
-          <ThemedText style={styles.title} numberOfLines={2}>{item.title}</ThemedText>
-          <Pressable onPress={() => removeItem(item.variantId)} style={styles.removeBtn}>
+          <ThemedText style={styles.title} numberOfLines={2}>{item.product.title}</ThemedText>
+          <Pressable onPress={() => removeFromCart(item.variantId)} style={styles.removeBtn}>
             <IconSymbol name="xmark" size={20} color="#888" />
           </Pressable>
         </View>
 
         <View style={styles.priceRow}>
-          <ThemedText style={styles.price}>₹{item.price}</ThemedText>
-          {item.mrp && item.mrp > (item.price || 0) && (
-            <ThemedText style={styles.mrp}>₹{item.mrp}</ThemedText>
+          <ThemedText style={styles.price}>₹{item.product.price}</ThemedText>
+          {item.product.mrp && item.product.mrp > (item.product.price || 0) && (
+            <ThemedText style={styles.mrp}>₹{item.product.mrp}</ThemedText>
           )}
         </View>
 

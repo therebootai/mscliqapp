@@ -9,8 +9,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import ProductGallery from "./ProductGallery";
 import RenderHtml from 'react-native-render-html';
 import { ENDPOINTS } from '@/config/api';
-import { useWishlist } from "@/context/WishlistContext";
-
+import { useWishlistStore } from "@/store/wishlistStore";
 export interface ProductViewProps {
   data: any;
   onAddToCart?: () => void;
@@ -31,8 +30,9 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
   const { currentVariant, siblingOptions, effectiveTax } = data;
   const product = currentVariant.productId;
 
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const inWishlist = isInWishlist(product._id);
+  const isInWishlist = useWishlistStore((state) => state.isInWishlist);
+  const toggleWishlist = useWishlistStore((state) => state.toggleItem);
+  const inWishlist = isInWishlist(currentVariant._id);
 
   const [pincode, setPincode] = useState("");
   const [checkingPin, setCheckingPin] = useState(false);
@@ -103,14 +103,14 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
   const handleWishlist = () => {
     toggleWishlist({
       _id: product._id,
+      variantId: currentVariant._id, // use variant's _id as variantId
       title: currentVariant.title,
-      coverImage: currentVariant.coverImage,
-      price: currentVariant.price,
-      mrp: currentVariant.mrp,
-      discount: discount,
-      brandId: product.brandId,
-      categoryId: product.categoryId,
-      default_slug: currentVariant.slug,
+      image: currentVariant.coverImage?.url || '',
+      price: currentVariant.price.toString(),
+      oldPrice: currentVariant.mrp?.toString(),
+      discount: discount.toString(),
+      categoryName: product.categoryId?.name,
+      slug: currentVariant.slug,
     });
   };
 

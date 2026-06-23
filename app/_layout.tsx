@@ -11,29 +11,38 @@ export const unstable_settings = {
 };
 
 import { DrawerProvider } from '@/components/ui/drawer';
-import { WishlistProvider } from '@/context/WishlistContext';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import Toast from '@/components/ui/Toast';
 
 export default function RootLayout() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+
   useEffect(() => {
     useAuthStore.getState().initialize();
   }, []);
 
+  useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      useCartStore.getState().fetchCart().catch((e) => console.error('Fetch cart failed on init:', e));
+      useWishlistStore.getState().fetchWishlist().catch((e) => console.error('Fetch wishlist failed on init:', e));
+    }
+  }, [isInitialized, isAuthenticated]);
+
   return (
     <ThemeProvider value={DefaultTheme}>
-      <WishlistProvider>
-        <DrawerProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="profile" options={{ headerShown: false }} />
-            <Stack.Screen name="wishlist" options={{ title: 'Wishlist', headerBackTitle: 'Back' }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <Toast />
-          <StatusBar style="light" />
-        </DrawerProvider>
-      </WishlistProvider>
+      <DrawerProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="wishlist" options={{ title: 'Wishlist', headerBackTitle: 'Back' }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <Toast />
+        <StatusBar style="light" />
+      </DrawerProvider>
     </ThemeProvider>
   );
 }

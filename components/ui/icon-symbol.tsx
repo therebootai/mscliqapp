@@ -37,7 +37,8 @@ const MAPPING = {
   'award': 'workspace-premium',
   'check-circle': 'check-circle',
   'bag': 'shopping-bag',
-  'tag': 'local-offer'
+  'tag': 'local-offer',
+  'square.grid.2x2': 'grid-view'
 } as IconMapping;
 
 /**

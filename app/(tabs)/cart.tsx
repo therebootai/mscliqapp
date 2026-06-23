@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Pressable, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useCartStore } from '@/store/useCartStore';
+import { useCartStore } from '@/store/cartStore';
 import CartItem from '@/components/cart/CartItem';
 
 export default function CartScreen() {
@@ -11,16 +11,17 @@ export default function CartScreen() {
   const router = useRouter();
   const { items } = useCartStore();
 
-  const totalMRP = items.reduce((acc, item) => acc + (item.mrp || item.price || 0) * item.quantity, 0);
-  const subtotal = items.reduce((acc, item) => acc + (item.price || 0) * item.quantity, 0);
+  const totalMRP = items.reduce((acc, item) => acc + (item.product.mrp || item.product.price || 0) * item.quantity, 0);
+  const subtotal = items.reduce((acc, item) => acc + (item.product.price || 0) * item.quantity, 0);
   const totalDiscount = totalMRP - subtotal;
   
   // Basic tax calculation based on effectiveTax
   const totalTax = items.reduce((acc, item) => {
     let taxAmount = 0;
-    if (item.effectiveTax && item.effectiveTax.length > 0) {
-      const totalSlab = item.effectiveTax.reduce((sum, tax) => sum + tax.slab, 0);
-      taxAmount = ((item.price || 0) * totalSlab / 100) * item.quantity;
+    const taxes = item.product.effectiveTax;
+    if (taxes && taxes.length > 0) {
+      const totalSlab = taxes.reduce((sum, tax) => sum + tax.slab, 0);
+      taxAmount = ((item.product.price || 0) * totalSlab / 100) * item.quantity;
     }
     return acc + taxAmount;
   }, 0);
@@ -123,16 +124,17 @@ export default function CartScreen() {
             <ScrollView style={{ maxHeight: 250, marginBottom: 15 }} showsVerticalScrollIndicator={false}>
               {items.map(item => {
                 let itemTax = 0;
-                if (item.effectiveTax && item.effectiveTax.length > 0) {
-                  const totalSlab = item.effectiveTax.reduce((sum, tax) => sum + tax.slab, 0);
-                  itemTax = ((item.price || 0) * totalSlab / 100) * item.quantity;
+                const taxes = item.product.effectiveTax;
+                if (taxes && taxes.length > 0) {
+                  const totalSlab = taxes.reduce((sum, tax) => sum + tax.slab, 0);
+                  itemTax = ((item.product.price || 0) * totalSlab / 100) * item.quantity;
                 }
-                const itemTotal = ((item.price || 0) * item.quantity);
+                const itemTotal = ((item.product.price || 0) * item.quantity);
 
                 return (
                   <View key={item.variantId} style={{ marginBottom: 15 }}>
                     <ThemedText style={{ fontSize: 13, fontWeight: 'bold', color: '#222' }} numberOfLines={2}>
-                      {item.title} (x{item.quantity})
+                      {item.product.title} (x{item.quantity})
                     </ThemedText>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
                       <ThemedText style={{ fontSize: 12, color: '#666' }}>Item Price</ThemedText>

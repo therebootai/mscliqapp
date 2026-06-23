@@ -7,5 +7,7 @@ export const ENDPOINTS = {
   VARIANT_BY_SLUG: `${API_BASE_URL}/variants/slug`,
   REVIEWS_BY_PRODUCT: `${API_BASE_URL}/review/product`,
   COURIER_SERVICEABILITY: `${API_BASE_URL}/courier/serviceability`,
+  CATEGORY_FILTERS: `${API_BASE_URL}/products/category`, // Appended dynamically with /[slug]/filters
+  SEARCH_FILTERS: `${API_BASE_URL}/products/search/filters`,
   // Add other endpoints here as needed
 };

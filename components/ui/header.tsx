@@ -7,8 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useDrawer } from '@/components/ui/drawer';
 import { useRouter } from 'expo-router';
-import { useWishlist } from '@/context/WishlistContext';
-
+import { useWishlistStore } from '@/store/wishlistStore';
 export function Header() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -17,8 +16,7 @@ export function Header() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   
-  const { wishlist } = useWishlist();
-  const wishlistCount = wishlist.length;
+  const wishlistCount = useWishlistStore((state) => state.items.length);
 
   const themeColors = Colors.light;
 

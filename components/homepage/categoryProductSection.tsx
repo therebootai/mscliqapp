@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import ProductCard, { Product } from "@/components/product/productCard";
 import { ENDPOINTS } from "@/config/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useRouter } from "expo-router";
 
 interface CategoryProductSectionProps {
   category: {
@@ -14,6 +15,7 @@ interface CategoryProductSectionProps {
 }
 
 export default function CategoryProductSection({ category }: CategoryProductSectionProps) {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +37,13 @@ export default function CategoryProductSection({ category }: CategoryProductSect
     <View style={styles.section}>
       <View style={styles.header}>
         <ThemedText style={styles.title}>{category.name}</ThemedText>
-        <Pressable style={styles.seeAllBtn}>
+        <Pressable 
+          style={styles.seeAllBtn}
+          onPress={() => router.push({
+            pathname: '/category/[slug]',
+            params: { slug: category.slug, name: category.name }
+          })}
+        >
           <ThemedText style={styles.seeAllText}>See All</ThemedText>
           <IconSymbol name="chevron.right" size={14} color="#EE0000" />
         </Pressable>

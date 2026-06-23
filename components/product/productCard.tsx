@@ -2,8 +2,8 @@ import { StyleSheet, View, Pressable, Dimensions, Alert } from "react-native";
 import { Image } from "expo-image";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useWishlist } from "@/context/WishlistContext";
-import { useCartStore } from "@/store/useCartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { useCartStore } from "@/store/cartStore";
 import { useToastStore } from "@/store/useToastStore";
 
 const { width } = Dimensions.get("window");
@@ -11,6 +11,7 @@ const CARD_WIDTH = (width - 40) / 2; // (Screen - 2*15 padding - 10 gap) / 2
 
 export interface Product {
   _id: string;
+  variantId?: string;
   title: string;
   brandId?: {
     name: string;
@@ -33,8 +34,13 @@ export interface Product {
     count: number;
   };
   isNew?: boolean;
-  default_slug: string;
+  default_slug?: string;
+  slug?: string;
+  defaultVariantId?: string | { _id: string };
   taxes?: { name: string; slab: number }[];
+  image?: string;
+  oldPrice?: string | number;
+  categoryName?: string;
 }
 
 import { Link } from "expo-router";
@@ -44,42 +50,61 @@ export default function ProductCard({ product }: { product: Product }) {
   const rating = product.ratings?.average || 0;
   const reviews = product.ratings?.count || 0;
   
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const inWishlist = isInWishlist(product._id);
+  const isInWishlist = useWishlistStore((state) => state.isInWishlist);
+  const toggleWishlist = useWishlistStore((state) => state.toggleItem);
 
-  // Safely extract price, handling both 'displayPrice' and 'price' formats
-  const price = product.displayPrice ?? product.price ?? 0;
-  const mrp = product.displayMrp ?? product.mrp ?? price;
+  // Clean string prices if passed from wishlist
+  const parsePrice = (p: any): number => {
+    if (typeof p === 'number') return p;
+    if (typeof p === 'string') return Number(p.replace(/[^0-9.-]+/g, ""));
+    return 0;
+  };
+
+  const price = parsePrice(product.displayPrice ?? product.price ?? 0);
+  const mrp = parsePrice(product.displayMrp ?? product.mrp ?? product.oldPrice ?? price);
   
   // Safely extract or calculate discount
-  let discount = product.displayDiscount ?? product.discount ?? 0;
+  let discount = parsePrice(product.displayDiscount ?? product.discount ?? 0);
   if (discount === 0 && mrp > price) {
     discount = Math.round(((mrp - price) / mrp) * 100);
   }
 
-  const { addItem, items, updateQuantity, removeItem } = useCartStore();
-  const cartItem = items.find(i => i.variantId === product._id);
+  const variantIdStr = product.variantId 
+    ? String(product.variantId)
+    : (typeof product.defaultVariantId === 'object' 
+      ? String(product.defaultVariantId._id) 
+      : String(product.defaultVariantId || product._id));
+      
+  const inWishlist = isInWishlist(variantIdStr);
+      
+  const productSlug = product.default_slug || product.slug || '';
+
+  const { addToCart, items, updateQuantity, removeFromCart } = useCartStore();
+  const cartItem = items.find(i => i.variantId === variantIdStr);
 
   const handleAddToCart = () => {
-    addItem({
-      variantId: product._id,
-      quantity: 1,
+    addToCart(variantIdStr, {
+      _id: product._id,
       title: product.title,
-      image: product.coverImage?.url,
+      image: product.coverImage?.url || "",
       price: price,
       mrp: mrp,
+      discount: discount,
+      categoryName: product.categoryId?.name,
+      stocks: 999,
+      slug: productSlug,
       effectiveTax: product.taxes,
     });
     showToast("Added to Cart", "success");
   };
 
   return (
-    <Link href={`/product/${product.default_slug}`} asChild>
+    <Link href={`/product/${productSlug}`} asChild>
       <Pressable style={styles.card}>
         {/* Image Area */}
         <View style={styles.imageArea}>
           <Image
-            source={{ uri: product.coverImage?.url }}
+            source={{ uri: product.coverImage?.url || product.image }}
             style={styles.image}
             contentFit="contain"
             transition={500}
@@ -92,8 +117,18 @@ export default function ProductCard({ product }: { product: Product }) {
           <Pressable 
             style={styles.wishlistBtn}
             onPress={() => {
-              toggleWishlist(product);
-              showToast(inWishlist ? "Removed from Wishlist" : "Added to Wishlist", "success");
+              toggleWishlist({
+                _id: product._id,
+                variantId: variantIdStr,
+                title: product.title,
+                image: product.coverImage?.url || '',
+                price: price.toString(),
+                oldPrice: mrp.toString(),
+                discount: discount.toString(),
+                categoryName: product.categoryId?.name,
+                slug: productSlug,
+              });
+              // Toast is now handled by the store
             }}
           >
             <IconSymbol 
@@ -108,7 +143,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <View style={styles.contentArea}>
           <View>
             <ThemedText style={styles.brandText} numberOfLines={1}>
-              {product.brandId?.name || "Brand"} {product.categoryId?.name && `· ${product.categoryId.name}`}
+              {product.brandId?.name || "Brand"} {(product.categoryId?.name || product.categoryName) && `· ${product.categoryId?.name || product.categoryName}`}
             </ThemedText>
 
             <ThemedText style={styles.title} numberOfLines={2}>
@@ -159,9 +194,9 @@ export default function ProductCard({ product }: { product: Product }) {
                 style={styles.qtyBtn} 
                 onPress={() => {
                   if (cartItem.quantity > 1) {
-                    updateQuantity(product._id, cartItem.quantity - 1);
+                    updateQuantity(variantIdStr, cartItem.quantity - 1);
                   } else {
-                    removeItem(product._id);
+                    removeFromCart(variantIdStr);
                   }
                 }}
               >
@@ -170,7 +205,7 @@ export default function ProductCard({ product }: { product: Product }) {
               <ThemedText style={styles.qtyText}>{cartItem.quantity}</ThemedText>
               <Pressable 
                 style={styles.qtyBtn} 
-                onPress={() => updateQuantity(product._id, cartItem.quantity + 1)}
+                onPress={() => updateQuantity(variantIdStr, cartItem.quantity + 1)}
               >
                 <ThemedText style={styles.qtyBtnText}>+</ThemedText>
               </Pressable>
