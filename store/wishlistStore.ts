@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as SecureStore from '@/utils/storage';
 import { BASE_URL } from '@/config/api';
@@ -161,7 +160,7 @@ export const useWishlistStore = create<WishlistState>()(
     }),
     {
       name: 'pahadi-wishlist-storage-v3',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => SecureStore.zustandStorage),
       partialize: (state) => ({ items: state.items, isDirty: state.isDirty }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

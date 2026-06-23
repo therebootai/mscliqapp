@@ -5,26 +5,23 @@ import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useCartStore } from '@/store/cartStore';
 import CartItem from '@/components/cart/CartItem';
+import { calculateCartTotals, calculateItemTax } from '@/utils/taxCalculation';
 
 export default function CartScreen() {
   const [showPriceDetails, setShowPriceDetails] = useState(false);
   const router = useRouter();
   const { items } = useCartStore();
 
+  // Use frontend tax calculation utility
+  const mappedItems = items.map(item => ({
+    price: item.product.price || 0,
+    quantity: item.quantity,
+    effectiveTax: item.product.effectiveTax
+  }));
+  const { subtotal, totalTax } = calculateCartTotals(mappedItems);
+
   const totalMRP = items.reduce((acc, item) => acc + (item.product.mrp || item.product.price || 0) * item.quantity, 0);
-  const subtotal = items.reduce((acc, item) => acc + (item.product.price || 0) * item.quantity, 0);
   const totalDiscount = totalMRP - subtotal;
-  
-  // Basic tax calculation based on effectiveTax
-  const totalTax = items.reduce((acc, item) => {
-    let taxAmount = 0;
-    const taxes = item.product.effectiveTax;
-    if (taxes && taxes.length > 0) {
-      const totalSlab = taxes.reduce((sum, tax) => sum + tax.slab, 0);
-      taxAmount = ((item.product.price || 0) * totalSlab / 100) * item.quantity;
-    }
-    return acc + taxAmount;
-  }, 0);
 
   const shipping = subtotal > 500 ? 0 : 50; // Free shipping over 500
   const grandTotal = subtotal + totalTax + (items.length > 0 ? shipping : 0);
@@ -100,7 +97,7 @@ export default function CartScreen() {
             <ThemedText style={styles.bottomSub}>View price details</ThemedText>
           </Pressable>
         </View>
-        <Pressable style={styles.checkoutBtn} onPress={() => {}}>
+        <Pressable style={styles.checkoutBtn} onPress={() => router.push('/checkout')}>
           <ThemedText style={styles.checkoutBtnText}>Proceed to Checkout</ThemedText>
         </Pressable>
       </View>
@@ -112,8 +109,9 @@ export default function CartScreen() {
         visible={showPriceDetails}
         onRequestClose={() => setShowPriceDetails(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowPriceDetails(false)}>
-          <Pressable style={styles.modalContent} onPress={e => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowPriceDetails(false)} />
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <ThemedText style={styles.summaryTitle}>Price Details</ThemedText>
               <Pressable onPress={() => setShowPriceDetails(false)}>
@@ -121,14 +119,9 @@ export default function CartScreen() {
               </Pressable>
             </View>
 
-            <ScrollView style={{ maxHeight: 250, marginBottom: 15 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ maxHeight: 250, marginBottom: 15 }} showsVerticalScrollIndicator={true}>
               {items.map(item => {
-                let itemTax = 0;
-                const taxes = item.product.effectiveTax;
-                if (taxes && taxes.length > 0) {
-                  const totalSlab = taxes.reduce((sum, tax) => sum + tax.slab, 0);
-                  itemTax = ((item.product.price || 0) * totalSlab / 100) * item.quantity;
-                }
+                const itemTax = calculateItemTax(item.product.price || 0, item.quantity, item.product.effectiveTax);
                 const itemTotal = ((item.product.price || 0) * item.quantity);
 
                 return (
@@ -184,8 +177,8 @@ export default function CartScreen() {
               <ThemedText style={styles.totalLabel}>Total Amount</ThemedText>
               <ThemedText style={styles.totalValue}>₹{grandTotal.toFixed(2)}</ThemedText>
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </View>
   );

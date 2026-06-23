@@ -1,9 +1,41 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as SecureStore from '@/utils/storage';
+import * as FileSystem from 'expo-file-system';
 import { BASE_URL } from '@/config/api';
+
+const fsStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    try {
+      const uri = `${FileSystem.documentDirectory}${name}.json`;
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      if (fileInfo.exists) {
+        return await FileSystem.readAsStringAsync(uri);
+      }
+      return null;
+    } catch (e) {
+      console.warn('Failed to read from fs storage:', e);
+      return null;
+    }
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    try {
+      const uri = `${FileSystem.documentDirectory}${name}.json`;
+      await FileSystem.writeAsStringAsync(uri, value);
+    } catch (e) {
+      console.warn('Failed to write to fs storage:', e);
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      const uri = `${FileSystem.documentDirectory}${name}.json`;
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+    } catch (e) {
+      console.warn('Failed to remove from fs storage:', e);
+    }
+  },
+};
 
 // Handles variantId that may be a string, an object { _id: string }, or { $oid: string }
 function extractVariantId(vid: any): string {
@@ -222,23 +254,54 @@ export const useCartStore = create<CartState>()(
           });
 
           if (data && data.data && data.data.items) {
-            const backendItems = data.data.items.map((item: any) => ({
-              variantId: extractVariantId(item.variantId),
-              quantity: item.quantity,
-              product: {
-                _id: item.variantId?.productId?._id || '',
-                title: item.variantId?.title || 'Product',
-                image: item.variantId?.coverImage?.url || '',
-                price: item.variantId?.price || 0,
-                mrp: item.variantId?.mrp,
-                discount: item.variantId?.discount,
-                categoryName: item.variantId?.productId?.categoryId?.name || '',
-                stocks: item.variantId?.stocks,
-                slug: item.variantId?.slug || '',
-                effectiveTax: item.effectiveTax || item.variantId?.effectiveTax || null,
-              },
-            }));
+            const localItems = get().items;
+            const backendItems = data.data.items.map((item: any) => {
+              const vidStr = extractVariantId(item.variantId);
+              const localItem = localItems.find(i => extractVariantId(i.variantId) === vidStr);
+              return {
+                variantId: vidStr,
+                quantity: item.quantity,
+                product: {
+                  _id: item.variantId?.productId?._id || item.variantId?.productId || localItem?.product?._id || '',
+                  title: item.variantId?.title || localItem?.product?.title || 'Product',
+                  image: item.variantId?.coverImage?.url || localItem?.product?.image || '',
+                  price: item.variantId?.price || localItem?.product?.price || 0,
+                  mrp: item.variantId?.mrp || localItem?.product?.mrp,
+                  discount: item.variantId?.discount || localItem?.product?.discount,
+                  categoryName: item.variantId?.productId?.categoryId?.name || localItem?.product?.categoryName || '',
+                  stocks: item.variantId?.stocks || localItem?.product?.stocks,
+                  slug: item.variantId?.slug || localItem?.product?.slug || '',
+                  effectiveTax: item.effectiveTax || item.variantId?.effectiveTax || item.variantId?.productId?.effectiveTax || localItem?.product?.effectiveTax || null,
+                },
+              };
+            });
             set({ items: backendItems, isDirty: false });
+
+            // Self-heal missing effectiveTax
+            const { items: updatedItems } = get();
+            const needsHealing = updatedItems.filter(i => 
+              (!i.product.effectiveTax || (Array.isArray(i.product.effectiveTax) && i.product.effectiveTax.length === 0)) 
+              && i.product.slug
+            );
+            if (needsHealing.length > 0) {
+              Promise.all(needsHealing.map(async (item) => {
+                try {
+                  const res = await axios.get(`${BASE_URL}/variants/slug/${item.product.slug}`);
+                  if (res.data?.data?.effectiveTax) {
+                    const latestItems = get().items;
+                    set({
+                      items: latestItems.map(i => 
+                        extractVariantId(i.variantId) === extractVariantId(item.variantId)
+                          ? { ...i, product: { ...i.product, effectiveTax: res.data.data.effectiveTax } }
+                          : i
+                      )
+                    });
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }));
+            }
           }
         } catch (error) {
           console.error('Fetch cart failed:', error);
@@ -284,23 +347,54 @@ export const useCartStore = create<CartState>()(
           });
 
           if (data && data.data && data.data.items) {
-            const backendItems = data.data.items.map((item: any) => ({
-              variantId: extractVariantId(item.variantId),
-              quantity: item.quantity,
-              product: {
-                _id: item.variantId?.productId?._id || '',
-                title: item.variantId?.title || 'Product',
-                image: item.variantId?.coverImage?.url || '',
-                price: item.variantId?.price || 0,
-                mrp: item.variantId?.mrp,
-                discount: item.variantId?.discount,
-                categoryName: item.variantId?.productId?.categoryId?.name || '',
-                stocks: item.variantId?.stocks,
-                slug: item.variantId?.slug || '',
-                effectiveTax: item.effectiveTax || item.variantId?.effectiveTax || null,
-              },
-            }));
+            const localItems = get().items;
+            const backendItems = data.data.items.map((item: any) => {
+              const vidStr = extractVariantId(item.variantId);
+              const localItem = localItems.find(i => extractVariantId(i.variantId) === vidStr);
+              return {
+                variantId: vidStr,
+                quantity: item.quantity,
+                product: {
+                  _id: item.variantId?.productId?._id || item.variantId?.productId || localItem?.product?._id || '',
+                  title: item.variantId?.title || localItem?.product?.title || 'Product',
+                  image: item.variantId?.coverImage?.url || localItem?.product?.image || '',
+                  price: item.variantId?.price || localItem?.product?.price || 0,
+                  mrp: item.variantId?.mrp || localItem?.product?.mrp,
+                  discount: item.variantId?.discount || localItem?.product?.discount,
+                  categoryName: item.variantId?.productId?.categoryId?.name || localItem?.product?.categoryName || '',
+                  stocks: item.variantId?.stocks || localItem?.product?.stocks,
+                  slug: item.variantId?.slug || localItem?.product?.slug || '',
+                  effectiveTax: item.effectiveTax || item.variantId?.effectiveTax || item.variantId?.productId?.effectiveTax || localItem?.product?.effectiveTax || null,
+                },
+              };
+            });
             get().mergeCart(backendItems);
+
+            // Self-heal missing effectiveTax
+            const { items: updatedItems } = get();
+            const needsHealing = updatedItems.filter(i => 
+              (!i.product.effectiveTax || (Array.isArray(i.product.effectiveTax) && i.product.effectiveTax.length === 0)) 
+              && i.product.slug
+            );
+            if (needsHealing.length > 0) {
+              Promise.all(needsHealing.map(async (item) => {
+                try {
+                  const res = await axios.get(`${BASE_URL}/variants/slug/${item.product.slug}`);
+                  if (res.data?.data?.effectiveTax) {
+                    const latestItems = get().items;
+                    set({
+                      items: latestItems.map(i => 
+                        extractVariantId(i.variantId) === extractVariantId(item.variantId)
+                          ? { ...i, product: { ...i.product, effectiveTax: res.data.data.effectiveTax } }
+                          : i
+                      )
+                    });
+                  }
+                } catch (e) {
+                  // ignore
+                }
+              }));
+            }
           }
         } catch (error) {
           console.error('Fetch and merge failed:', error);
@@ -310,8 +404,8 @@ export const useCartStore = create<CartState>()(
       },
     }),
     {
-      name: 'pahadi-cart-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      name: 'cart-storage',
+      storage: createJSONStorage(() => fsStorage),
       partialize: (state) => ({ 
         items: state.items, 
         isDirty: state.isDirty,

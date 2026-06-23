@@ -38,7 +38,14 @@ const MAPPING = {
   'check-circle': 'check-circle',
   'bag': 'shopping-bag',
   'tag': 'local-offer',
-  'square.grid.2x2': 'grid-view'
+  'square.grid.2x2': 'grid-view',
+  'plus': 'add',
+  'minus': 'remove',
+  'shippingbox.fill': 'local-shipping',
+  'arrow.triangle.2.circlepath': 'assignment-return',
+  'lock.fill': 'lock',
+  'phone.fill': 'phone',
+  'envelope.fill': 'email'
 } as IconMapping;
 
 /**

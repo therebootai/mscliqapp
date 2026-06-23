@@ -12,7 +12,7 @@ import { useToastStore } from '@/store/useToastStore';
 export default function ProductPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
-  const { addToCart } = useCartStore();
+  const { addToCart, items } = useCartStore();
   const { showToast } = useToastStore();
   
   const [loading, setLoading] = useState(true);
@@ -85,6 +85,35 @@ export default function ProductPage() {
     showToast('Added to Cart', 'success');
   };
 
+  const handleBuyNow = () => {
+    if (!productData?.currentVariant || !productData?.currentVariant?.productId) return;
+    
+    const variant = productData.currentVariant;
+    const product = variant.productId;
+    
+    const isAlreadyInCart = items.some(item => item.variantId === variant._id);
+    
+    if (!isAlreadyInCart) {
+      addToCart(variant._id, {
+        _id: product._id,
+        title: variant.title,
+        image: variant.coverImage?.url || "",
+        price: variant.price,
+        mrp: variant.mrp,
+        discount: variant.discount,
+        categoryName: product.categoryId?.name,
+        stocks: variant.stocks,
+        slug: variant.slug,
+        effectiveTax: productData.effectiveTax,
+      });
+    }
+    
+    router.push({
+      pathname: '/checkout',
+      params: { buyNowVariantId: variant._id }
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen 
@@ -95,7 +124,7 @@ export default function ProductPage() {
       <ProductView 
         data={productData} 
         onAddToCart={handleAddToCart}
-        onBuyNow={() => showToast('Proceeding to checkout', 'info')}
+        onBuyNow={handleBuyNow}
       />
     </View>
   );

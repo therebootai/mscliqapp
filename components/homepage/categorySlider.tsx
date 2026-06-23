@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { FlatList, StyleSheet, View, Dimensions } from "react-native";
+import { FlatList, StyleSheet, View, Dimensions, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { ThemedText } from "@/components/themed-text";
 import { ENDPOINTS } from "@/config/api";
+import { router } from "expo-router";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const ITEM_WIDTH = SCREEN_WIDTH / 3;
@@ -81,7 +82,7 @@ export default function CategorySlider() {
           setCurrentIndex(index);
         }}
         renderItem={({ item }) => (
-          <View style={styles.categoryItem}>
+          <Pressable onPress={()=> router.push(`/category/${item.slug}`)} style={styles.categoryItem}>
             <View style={styles.imageShadowContainer}>
               <View style={styles.imageContainer}>
                 <Image
@@ -96,7 +97,7 @@ export default function CategorySlider() {
                 {item.name}
               </ThemedText>
             </View>
-          </View>
+          </Pressable>
         )}
       />
       {totalPages > 1 && (

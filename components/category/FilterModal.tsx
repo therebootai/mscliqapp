@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Modal, Pressable, ScrollView, ActivityIndicator, TextInput, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Modal, Pressable, ScrollView, ActivityIndicator, TextInput } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ENDPOINTS } from '@/config/api';
@@ -7,7 +8,8 @@ import { ENDPOINTS } from '@/config/api';
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
-  categorySlug: string;
+  categorySlug?: string;
+  isSearchMode?: boolean;
   initialFilters: {
     brandIds: string[];
     minPrice?: number;
@@ -24,7 +26,7 @@ interface FilterModalProps {
   }) => void;
 }
 
-export default function FilterModal({ visible, onClose, categorySlug, initialFilters, onApply }: FilterModalProps) {
+export default function FilterModal({ visible, onClose, categorySlug, isSearchMode, initialFilters, onApply }: FilterModalProps) {
   const [loading, setLoading] = useState(true);
   const [filterData, setFilterData] = useState<any>(null);
   
@@ -38,22 +40,28 @@ export default function FilterModal({ visible, onClose, categorySlug, initialFil
   const [activeTab, setActiveTab] = useState('Subcategories');
 
   useEffect(() => {
+    if (visible && ((categorySlug && !filterData) || (isSearchMode && !filterData))) {
+      fetchFilters();
+    }
+  }, [visible, categorySlug, isSearchMode]);
+
+  useEffect(() => {
     if (visible) {
-      // Sync local state with initial filters when modal opens
       setLocalBrands(initialFilters.brandIds || []);
       setLocalMinPrice(initialFilters.minPrice);
       setLocalMaxPrice(initialFilters.maxPrice);
       setLocalSubcategory(initialFilters.subcategoryId);
       setLocalAttributes(initialFilters.attributes || {});
-
-      fetchFilters();
     }
   }, [visible, initialFilters]);
 
   const fetchFilters = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${ENDPOINTS.CATEGORY_FILTERS}/${categorySlug}/filters`);
+      const url = isSearchMode 
+        ? ENDPOINTS.SEARCH_FILTERS 
+        : `${ENDPOINTS.CATEGORY_FILTERS}/${categorySlug}/filters`;
+      const res = await fetch(url);
       const json = await res.json();
       if (json.data) {
         setFilterData(json.data);

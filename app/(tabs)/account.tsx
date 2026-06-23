@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useCallback } from 'react';
 import {
   StyleSheet,
@@ -6,8 +7,7 @@ import {
   TouchableOpacity,
   Text,
   ScrollView,
-  SafeAreaView,
-} from 'react-native';
+  } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';

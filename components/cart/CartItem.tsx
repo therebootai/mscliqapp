@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CartItem as CartItemType, useCartStore } from '@/store/cartStore';
+import { router } from 'expo-router';
 
 interface CartItemProps {
   item: CartItemType;
@@ -25,11 +26,14 @@ export default function CartItem({ item }: CartItemProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <Pressable 
+      style={styles.container} 
+      onPress={() => item.product.slug ? router.push(`/product/${item.product.slug}`) : null}
+    >
       <Image 
         source={{ uri: item.product.image }} 
         style={styles.image} 
-        contentFit="cover" 
+        contentFit="contain" 
       />
       
       <View style={styles.details}>
@@ -57,7 +61,7 @@ export default function CartItem({ item }: CartItemProps) {
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -71,8 +75,9 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   image: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
+    padding:4,
     borderRadius: 8,
     backgroundColor: '#f5f5f5',
   },

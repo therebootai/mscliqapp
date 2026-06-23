@@ -9,8 +9,8 @@ import SortModal from '@/components/category/SortModal';
 import FilterModal from '@/components/category/FilterModal';
 import { ENDPOINTS } from '@/config/api';
 
-export default function CategoryPage() {
-  const { slug, name } = useLocalSearchParams<{ slug: string; name?: string }>();
+export default function SearchPage() {
+  const { q } = useLocalSearchParams<{ q: string }>();
   const router = useRouter();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -33,18 +33,15 @@ export default function CategoryPage() {
     attributes: Record<string, string>;
   }>({
     brandIds: [],
-    minPrice: undefined,
-    maxPrice: undefined,
-    subcategoryId: undefined,
     attributes: {},
   });
 
   useEffect(() => {
     fetchProducts(1, true);
-  }, [slug, sortBy, filters]);
+  }, [q, sortBy, filters]);
 
   const fetchProducts = async (pageNum: number, reset = false) => {
-    if (!slug) return;
+    if (!q) return;
     
     if (reset) {
       setLoading(true);
@@ -55,27 +52,25 @@ export default function CategoryPage() {
 
     try {
       const params = new URLSearchParams();
+      params.append('search', q);
       params.append('page', String(pageNum));
       params.append('limit', '10');
       params.append('sortBy', sortBy);
+      params.append('isActive', 'true');
+      params.append('isPublished', 'true');
 
       if (filters.brandIds.length > 0) {
-        params.append('brandId', filters.brandIds.join(','));
+        params.append('brandIds', filters.brandIds.join(','));
       }
-      if (filters.minPrice !== undefined) {
-        params.append('minPrice', String(filters.minPrice));
-      }
-      if (filters.maxPrice !== undefined) {
-        params.append('maxPrice', String(filters.maxPrice));
-      }
-      if (filters.subcategoryId) {
-        params.append('subcategoryId', filters.subcategoryId);
-      }
+      if (filters.minPrice) params.append('minPrice', String(filters.minPrice));
+      if (filters.maxPrice) params.append('maxPrice', String(filters.maxPrice));
+      if (filters.subcategoryId) params.append('categoryId', filters.subcategoryId);
+
       Object.entries(filters.attributes).forEach(([key, value]) => {
-        if (value) params.append(`attr_${key}`, value);
+        params.append(`attributes[${key}]`, value);
       });
 
-      const res = await fetch(`${ENDPOINTS.PRODUCTS_BY_CATEGORY}/${slug}?${params.toString()}`);
+      const res = await fetch(`${ENDPOINTS.PRODUCTS}?${params.toString()}`);
       const json = await res.json();
       
       const newProducts = json.data?.products || [];
@@ -92,7 +87,7 @@ export default function CategoryPage() {
       if (!reset) setPage(pageNum);
 
     } catch (err) {
-      console.error('Error fetching category products:', err);
+      console.error('Error fetching search products:', err);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -105,12 +100,6 @@ export default function CategoryPage() {
     }
   };
 
-  const activeFiltersCount = 
-    filters.brandIds.length + 
-    (filters.minPrice || filters.maxPrice ? 1 : 0) + 
-    (filters.subcategoryId ? 1 : 0) + 
-    Object.keys(filters.attributes).length;
-
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -120,9 +109,14 @@ export default function CategoryPage() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <IconSymbol name="chevron.left" size={24} color="#222" />
         </Pressable>
-        <ThemedText style={styles.headerTitle} numberOfLines={1}>
-          {name || slug?.replace(/-/g, ' ').toUpperCase() || 'Category'}
-        </ThemedText>
+        <View style={styles.headerTitleContainer}>
+          <ThemedText style={styles.headerTitle} numberOfLines={1}>
+            Search Results
+          </ThemedText>
+          <ThemedText style={styles.headerSubtitle} numberOfLines={1}>
+            "{q}"
+          </ThemedText>
+        </View>
         <View style={{ width: 40 }} />
       </View>
 
@@ -136,11 +130,6 @@ export default function CategoryPage() {
         <Pressable style={styles.actionBtn} onPress={() => setFilterModalVisible(true)}>
           <IconSymbol name="line.3.horizontal.decrease" size={16} color="#555" />
           <ThemedText style={styles.actionText}>Filter</ThemedText>
-          {activeFiltersCount > 0 && (
-            <View style={styles.filterBadge}>
-              <ThemedText style={styles.filterBadgeText}>{activeFiltersCount}</ThemedText>
-            </View>
-          )}
         </Pressable>
       </View>
 
@@ -151,15 +140,7 @@ export default function CategoryPage() {
         </View>
       ) : products.length === 0 ? (
         <View style={styles.centerContainer}>
-          <ThemedText style={styles.emptyText}>No products found.</ThemedText>
-          <Pressable 
-            style={styles.clearBtn}
-            onPress={() => setFilters({
-              brandIds: [], minPrice: undefined, maxPrice: undefined, subcategoryId: undefined, attributes: {}
-            })}
-          >
-            <ThemedText style={styles.clearBtnText}>Clear Filters</ThemedText>
-          </Pressable>
+          <ThemedText style={styles.emptyText}>No products found for "{q}".</ThemedText>
         </View>
       ) : (
         <FlatList
@@ -192,10 +173,13 @@ export default function CategoryPage() {
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
-        categorySlug={slug || ''}
+        isSearchMode={true}
         initialFilters={filters}
-        onApply={setFilters}
+        onApply={(newFilters) => {
+          setFilters(newFilters);
+        }}
       />
+
     </SafeAreaView>
   );
 }
@@ -210,7 +194,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    height: 56,
+    height: 60,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
@@ -219,13 +203,21 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: -8,
   },
+  headerTitleContainer: {
+    display: 'flex',
+    flexDirection:'row',
+    gap:2,
+    justifyContent:"center",
+    alignItems:"center",
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 14,
+    color: '#666',
+  },
+  headerSubtitle: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#222',
-    textTransform: 'capitalize',
-    flex: 1,
-    textAlign: 'center',
   },
   actionBar: {
     flexDirection: 'row',
@@ -250,21 +242,7 @@ const styles = StyleSheet.create({
   actionDivider: {
     width: 1,
     backgroundColor: '#EEEEEE',
-    marginVertical: 12,
-  },
-  filterBadge: {
-    backgroundColor: '#EE0000',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  filterBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
+    marginVertical: 10,
   },
   centerContainer: {
     flex: 1,
@@ -276,17 +254,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 15,
-  },
-  clearBtn: {
-    borderWidth: 1,
-    borderColor: '#EE0000',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  clearBtnText: {
-    color: '#EE0000',
-    fontWeight: 'bold',
+    textAlign: 'center',
   },
   listContainer: {
     padding: 15,

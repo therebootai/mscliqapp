@@ -4,9 +4,11 @@ import { ThemedView } from '@/components/themed-view';
 import ProductCard from '@/components/product/productCard';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { Link } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function WishlistScreen() {
   const wishlist = useWishlistStore((state) => state.items);
+  const insets = useSafeAreaInsets();
 
   if (wishlist.length === 0) {
     return (
@@ -33,7 +35,7 @@ export default function WishlistScreen() {
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => <ProductCard product={item} />}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingBottom: insets.bottom + 20 }]}
         columnWrapperStyle={styles.row}
       />
     </ThemedView>

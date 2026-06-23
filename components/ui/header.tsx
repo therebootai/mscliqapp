@@ -72,6 +72,18 @@ export function Header() {
               placeholderTextColor={themeColors.icon}
               value={searchText}
               onChangeText={setSearchText}
+              onSubmitEditing={() => {
+                if (searchText.trim()) {
+                  const query = searchText.trim();
+                  setSearchText('');
+                  setIsSearchVisible(false);
+                  router.push({
+                    pathname: '/search',
+                    params: { q: query }
+                  });
+                }
+              }}
+              returnKeyType="search"
               autoFocus
             />
             <TouchableOpacity 

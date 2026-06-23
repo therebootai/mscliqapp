@@ -2,6 +2,7 @@ export const API_BASE_URL = "https://api.mscliq.com/api/v1";
 export const BASE_URL = API_BASE_URL;
 
 export const ENDPOINTS = {
+  PRODUCTS: `${API_BASE_URL}/products`,
   CATEGORIES: `${API_BASE_URL}/categories`,
   PRODUCTS_BY_CATEGORY: `${API_BASE_URL}/products/category`,
   VARIANT_BY_SLUG: `${API_BASE_URL}/variants/slug`,

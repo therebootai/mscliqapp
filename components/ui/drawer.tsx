@@ -59,7 +59,7 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
 
   const menuItems = [
     { label: 'Home', icon: 'house.fill', route: '/' },
-    { label: 'Explore', icon: 'paperplane.fill', route: '/explore' },
+    { label: 'Catgory', icon: 'square.grid.2x2', route: '/category' },
     { label: 'Account', icon: 'person.fill', route: '/account' },
     { label: 'Cart', icon: 'cart.fill', route: '/cart' },
     { label: 'Wishlist', icon: 'heart', route: '/wishlist' },
@@ -80,7 +80,7 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
           <ThemedView style={styles.drawerContent}>
             <View style={styles.drawerHeader}>
               <ThemedText type="title">MSCLIQ</ThemedText>
-              <ThemedText type="default">Premium Store</ThemedText>
+              <ThemedText type="default">Premium Electronics Store</ThemedText>
             </View>
 
             <View style={styles.drawerItems}>

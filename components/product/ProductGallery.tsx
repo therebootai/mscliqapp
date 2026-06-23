@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, ScrollView, Pressable, Platform, Share, Modal, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Dimensions, ScrollView, Pressable, Platform, Share, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ThemedText } from '@/components/themed-text';
@@ -11,13 +12,17 @@ interface ProductGalleryProps {
   isWishlisted: boolean;
   onWishlist: () => void;
   isOutOfStock?: boolean;
+  productTitle?: string;
+  productUrl?: string;
 }
 
 export default function ProductGallery({
   images,
   isWishlisted,
   onWishlist,
-  isOutOfStock
+  isOutOfStock,
+  productTitle,
+  productUrl
 }: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -50,9 +55,11 @@ export default function ProductGallery({
 
   const handleShare = async () => {
     try {
+      const cleanTitle = productTitle ? productTitle.replace(/[\s|]+$/, '') : 'this product';
+      const targetUrl = productUrl || 'https://mscliq.com';
       await Share.share({
-        message: 'Check out this product!',
-        url: 'https://mscliq.com',
+        message: `Check out ${cleanTitle}!\n\n${targetUrl}`,
+        url: targetUrl,
       });
     } catch (error) {
       console.error(error);

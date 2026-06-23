@@ -3,6 +3,7 @@ import {
   StyleSheet, View, ScrollView, Dimensions, 
   Pressable, TextInput, ActivityIndicator, useWindowDimensions
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -10,6 +11,7 @@ import ProductGallery from "./ProductGallery";
 import RenderHtml from 'react-native-render-html';
 import { ENDPOINTS } from '@/config/api';
 import { useWishlistStore } from "@/store/wishlistStore";
+import { useCartStore } from "@/store/cartStore";
 export interface ProductViewProps {
   data: any;
   onAddToCart?: () => void;
@@ -27,8 +29,25 @@ const TrustIcon = ({ icon, label }: { icon: any, label: string }) => (
 
 export default function ProductView({ data, onAddToCart, onBuyNow }: ProductViewProps) {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { currentVariant, siblingOptions, effectiveTax } = data;
   const product = currentVariant.productId;
+
+  const { items, updateQuantity, removeFromCart } = useCartStore();
+  const cartItem = items.find(item => item.variantId === currentVariant?._id);
+  const cartQuantity = cartItem ? cartItem.quantity : 0;
+
+  const handleIncrease = () => {
+    updateQuantity(currentVariant._id, cartQuantity + 1);
+  };
+
+  const handleDecrease = () => {
+    if (cartQuantity > 1) {
+      updateQuantity(currentVariant._id, cartQuantity - 1);
+    } else {
+      removeFromCart(currentVariant._id);
+    }
+  };
 
   const isInWishlist = useWishlistStore((state) => state.isInWishlist);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
@@ -124,6 +143,8 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
           isWishlisted={inWishlist}
           onWishlist={handleWishlist}
           isOutOfStock={stockStatus === 'out'}
+          productTitle={currentVariant.title}
+          productUrl={`https://mscliq.com/product/${currentVariant.slug}`}
         />
 
         <View style={styles.detailsContainer}>
@@ -198,23 +219,22 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
                     <ThemedText style={styles.discountBadge}>{discount}% Off</ThemedText>
                   </>
                 )}
+                <View style={styles.stockWrap}>
+                  <ThemedText style={styles.stockCount}>{currentVariant.stocks}</ThemedText>
+                  <View style={styles.stockDot} />
+                  <ThemedText style={[
+                    styles.stockStatus,
+                    stockStatus === 'out' ? { color: '#EE0000' } : stockStatus === 'low' ? { color: '#FF9800' } : { color: '#4CAF50' }
+                  ]}>
+                    {stockStatus === 'out' ? 'Out of Stock' : stockStatus === 'low' ? 'Low Stock' : 'In-Stock'}
+                  </ThemedText>
+                </View>
               </View>
               {effectiveTax && effectiveTax.length > 0 && (
                 <ThemedText style={styles.taxNote}>
                   {effectiveTax.map((t: any) => `${t.slab}% ${t.name}`).join(' + ')} will be applied at checkout
                 </ThemedText>
               )}
-            </View>
-
-            <View style={styles.stockWrap}>
-              <ThemedText style={styles.stockCount}>{currentVariant.stocks}</ThemedText>
-              <View style={styles.stockDot} />
-              <ThemedText style={[
-                styles.stockStatus,
-                stockStatus === 'out' ? { color: '#EE0000' } : stockStatus === 'low' ? { color: '#FF9800' } : { color: '#4CAF50' }
-              ]}>
-                {stockStatus === 'out' ? 'Out of Stock' : stockStatus === 'low' ? 'Low Stock' : 'In-Stock'}
-              </ThemedText>
             </View>
           </View>
 
@@ -292,11 +312,23 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
       </ScrollView>
 
       {/* Sticky Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <Pressable style={styles.cartBtn} onPress={onAddToCart}>
-          <IconSymbol name="cart.fill" size={18} color="#222" />
-          <ThemedText style={styles.cartBtnText}>Add to Cart</ThemedText>
-        </Pressable>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 15) }]}>
+        {cartQuantity > 0 ? (
+          <View style={styles.quantityContainer}>
+            <Pressable onPress={handleDecrease} style={styles.qtyBtn}>
+              <IconSymbol name="minus" size={16} color="#EE0000" />
+            </Pressable>
+            <ThemedText style={styles.qtyText}>{cartQuantity}</ThemedText>
+            <Pressable onPress={handleIncrease} style={styles.qtyBtn}>
+              <IconSymbol name="plus" size={16} color="#EE0000" />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable style={styles.cartBtn} onPress={onAddToCart}>
+            <IconSymbol name="cart.fill" size={18} color="#222" />
+            <ThemedText style={styles.cartBtnText}>Add to Cart</ThemedText>
+          </Pressable>
+        )}
         <Pressable 
           style={[styles.buyBtn, stockStatus === 'out' && styles.buyBtnDisabled]} 
           onPress={onBuyNow}
@@ -407,7 +439,7 @@ const styles = StyleSheet.create({
   },
   priceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:"space-around",
     alignItems: 'flex-start',
     marginVertical: 15,
   },
@@ -441,6 +473,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginLeft: 8,
   },
   stockCount: {
     fontSize: 14,
@@ -539,16 +572,9 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     flexDirection: 'row',
-    padding: 15,
-    paddingBottom: 25, // For safe area on iOS
+    padding:5,
     gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    paddingHorizontal:10,
   },
   cartBtn: {
     flex: 1,
@@ -561,7 +587,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cartBtnText: {
-    fontSize: 14,
+    color: '#222',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  quantityContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#EE0000',
+    borderRadius: 8,
+    marginRight: 10,
+    paddingHorizontal: 15,
+  },
+  qtyBtn: {
+    padding: 10,
+  },
+  qtyText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#222',
   },

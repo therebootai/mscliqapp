@@ -125,31 +125,38 @@ export default function AddressesScreen() {
 
       try {
         // 1. Fetch City & State from public API
-        const pinResponse = await axios.get(`https://api.postalpincode.in/pincode/${postalCode}`);
-        const pinData = pinResponse.data[0];
-        
-        if (pinData.Status === 'Success' && pinData.PostOffice && pinData.PostOffice.length > 0) {
-          const postOffice = pinData.PostOffice[0];
-          setCity(postOffice.District || postOffice.Block || '');
-          setState(postOffice.State || '');
-        }
+        const fetchCityAndState = axios.get(`https://api.postalpincode.in/pincode/${postalCode}`)
+          .then(pinResponse => {
+            const pinData = pinResponse.data[0];
+            if (pinData.Status === 'Success' && pinData.PostOffice && pinData.PostOffice.length > 0) {
+              const postOffice = pinData.PostOffice[0];
+              setCity(postOffice.District || postOffice.Block || '');
+              setState(postOffice.State || '');
+            }
+          }).catch(console.error);
 
         // 2. Check Serviceability via Shiprocket
-        const { data } = await axios.get(`${BASE_URL}/courier/serviceability`, {
+        const checkServiceability = axios.get(`${BASE_URL}/courier/serviceability`, {
           params: {
             pickup_postcode: '110001', // Default pickup pincode
             delivery_postcode: postalCode,
             weight: '0.5',
             cod: '1',
           },
+        }).then(({ data }) => {
+          if (data.success && data.data?.status === 200) {
+            const etd = data.data.data?.available_courier_companies?.[0]?.etd;
+            setPincodeSuccess(`Delivery available${etd ? `. Expected by: ${etd}` : ''}`);
+          } else {
+            setPincodeError('Delivery not available for this pincode');
+          }
+        }).catch(error => {
+          console.error('Serviceability error:', error);
+          setPincodeError('Delivery not available for this pincode');
         });
 
-        if (data.success && data.data?.status === 200) {
-          const etd = data.data.data?.available_courier_companies?.[0]?.etd;
-          setPincodeSuccess(`Delivery available${etd ? `. Expected by: ${etd}` : ''}`);
-        } else {
-          setPincodeError('Delivery not available for this pincode');
-        }
+        await Promise.all([fetchCityAndState, checkServiceability]);
+
       } catch (error) {
         console.error('Pincode validation error:', error);
         setPincodeError('Delivery not available for this pincode');

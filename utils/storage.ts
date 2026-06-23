@@ -37,3 +37,15 @@ export async function deleteItemAsync(key: string) {
     await SecureStore.deleteItemAsync(key);
   }
 }
+
+export const zustandStorage = {
+  getItem: async (name: string): Promise<string | null> => {
+    return (await getItemAsync(name)) || null;
+  },
+  setItem: async (name: string, value: string): Promise<void> => {
+    await setItemAsync(name, value);
+  },
+  removeItem: async (name: string): Promise<void> => {
+    await deleteItemAsync(name);
+  },
+};

@@ -6,12 +6,14 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Header } from '@/components/ui/header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCartStore } from '@/store/cartStore';
 
 export default function TabLayout() {
   const { items } = useCartStore();
   const cartCount = items.length;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -20,6 +22,10 @@ export default function TabLayout() {
         headerShown: true,
         header: () => <Header />,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          paddingBottom: Math.max(insets.bottom, 10),
+          height: 60 + Math.max(insets.bottom, 0),
+        }
       }}>
       <Tabs.Screen
         name="index"

@@ -19,17 +19,18 @@ import Toast from '@/components/ui/Toast';
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const _hasHydrated = useCartStore((state) => state._hasHydrated);
 
   useEffect(() => {
     useAuthStore.getState().initialize();
   }, []);
 
   useEffect(() => {
-    if (isInitialized && isAuthenticated) {
+    if (isInitialized && isAuthenticated && _hasHydrated) {
       useCartStore.getState().fetchCart().catch((e) => console.error('Fetch cart failed on init:', e));
       useWishlistStore.getState().fetchWishlist().catch((e) => console.error('Fetch wishlist failed on init:', e));
     }
-  }, [isInitialized, isAuthenticated]);
+  }, [isInitialized, isAuthenticated, _hasHydrated]);
 
   return (
     <ThemeProvider value={DefaultTheme}>
