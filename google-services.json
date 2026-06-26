@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "933733167370",
+    "project_id": "mscliq",
+    "storage_bucket": "mscliq.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933733167370:android:36342ce99c3ddff7fbcaf3",
+        "android_client_info": {
+          "package_name": "com.mscliq.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdhpfnUGAmpmqADRm-ONBGLruM2kFjlu4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

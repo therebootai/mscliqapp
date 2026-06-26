@@ -55,6 +55,39 @@ export default function ProfileScreen() {
     },
   ];
 
+  const supportItems = [
+    {
+      title: 'Help Center',
+      icon: 'questionmark.circle.fill',
+      route: '/info/help-center' as const,
+      color: '#8b5cf6',
+    },
+    {
+      title: 'Shipping Information',
+      icon: 'box.truck.fill',
+      route: '/info/shipping-info' as const,
+      color: '#14b8a6',
+    },
+    {
+      title: 'Returns & Refunds',
+      icon: 'arrow.uturn.left.circle.fill',
+      route: '/info/returns-refunds' as const,
+      color: '#f43f5e',
+    },
+    {
+      title: 'Privacy Policy',
+      icon: 'lock.shield.fill',
+      route: '/info/privacy-policy' as const,
+      color: '#64748b',
+    },
+    {
+      title: 'Terms of Service',
+      icon: 'doc.text.fill',
+      route: '/info/terms' as const,
+      color: '#64748b',
+    },
+  ];
+
   if (!isInitialized) {
     return (
       <View style={styles.centered}>
@@ -65,7 +98,7 @@ export default function ProfileScreen() {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <View style={styles.unauthContainer}>
           <IconSymbol name="person.fill" size={80} color="#e5e7eb" />
           <Text style={styles.unauthTitle}>Welcome to MSCLIQ</Text>
@@ -79,7 +112,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.header}>
@@ -93,7 +126,23 @@ export default function ProfileScreen() {
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
+          <Text style={styles.sectionTitle}>My Account</Text>
           {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={() => router.push(item.route)}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: `${item.color}15` }]}>
+                <IconSymbol name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <Text style={styles.menuText}>{item.title}</Text>
+              <IconSymbol name="chevron.right" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+          ))}
+
+          <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Support & Legal</Text>
+          {supportItems.map((item, index) => (
             <TouchableOpacity
               key={index}
               style={styles.menuItem}
@@ -111,6 +160,14 @@ export default function ProfileScreen() {
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <IconSymbol name="xmark.circle.fill" size={20} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.deleteAccountButton} 
+          onPress={() => router.push('/profile/delete-account')}
+        >
+          <IconSymbol name="trash.fill" size={20} color="#ef4444" />
+          <Text style={styles.deleteAccountText}>Delete Account</Text>
         </TouchableOpacity>
 
         <View style={{ height: 80 }} />
@@ -220,6 +277,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  deleteAccountButton: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: '#fef2f2',
+    flexDirection: 'row',
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#fca5a5',
+  },
+  deleteAccountText: {
+    color: '#ef4444',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   unauthContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -258,4 +333,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 4,
+    marginLeft: 4,
+  }
 });

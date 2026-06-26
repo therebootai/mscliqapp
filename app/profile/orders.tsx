@@ -64,7 +64,7 @@ export default function OrdersScreen() {
 
   const filteredOrders = orders.filter(order => {
     const q = searchQuery.toLowerCase();
-    const orderIdMatch = (order.orderId || '').toLowerCase().includes(q);
+    const orderIdMatch = (order._id || '').toLowerCase().includes(q);
     const itemMatch = (order.items || []).some(item => 
       (item.snapshot?.title || item.title || '').toLowerCase().includes(q)
     );
@@ -80,7 +80,7 @@ export default function OrdersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Stack.Screen options={{ title: 'My Orders', headerShown: true }} />
       
       <View style={styles.searchContainer}>
@@ -154,7 +154,7 @@ export default function OrdersScreen() {
               </View>
 
               <View style={styles.cardFooter}>
-                <Text style={styles.orderIdText}>ID: {item.orderId}</Text>
+                <Text style={styles.orderIdText}>ID: {(item._id || '').toString().slice(-8).toUpperCase()}</Text>
                 <View style={styles.viewDetailsContainer}>
                   <Text style={styles.viewDetails}>View Details</Text>
                   <IconSymbol name="chevron.right" size={16} color="#3b82f6" />

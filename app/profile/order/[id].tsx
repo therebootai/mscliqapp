@@ -239,7 +239,7 @@ export default function OrderDetailsScreen() {
   if (!order) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Stack.Screen 
         options={{ 
           title: 'Order Details', 
@@ -258,7 +258,7 @@ export default function OrderDetailsScreen() {
         {/* HEADER SECTION */}
         <View style={styles.headerCard}>
           <View style={styles.headerInfo}>
-             <Text style={styles.orderIdHeader}>Order #{order.orderId}</Text>
+             <Text style={styles.orderIdHeader}>Order #{(order._id || '').toString().slice(-8).toUpperCase()}</Text>
              <Text style={styles.dateText}>Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.orderStatus)}15`, borderColor: `${getStatusColor(order.orderStatus)}30` }]}>

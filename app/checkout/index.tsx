@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, TextInput, ActivityIndicator, AppState, AppStateStatus, Alert, Image } from 'react-native';
 import { Stack, useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 
 export default function CheckoutScreen() {
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
   const { buyNowVariantId } = useLocalSearchParams<{ buyNowVariantId?: string }>();
   const insets = useSafeAreaInsets();
   const { items: cartItems, appliedCoupon, setAppliedCoupon, removeCoupon } = useCartStore();
@@ -60,7 +61,7 @@ export default function CheckoutScreen() {
         setPendingOrderId(null);
         await useCartStore.getState().clearCart();
         showToast('Payment successful! Order processed.', 'success');
-        router.replace(`/profile/order/${orderId}`);
+        router.replace(`/checkout/success?orderId=${orderId}`);
       } else if (order && order.orderStatus === 'payment_failed') {
         setPendingOrderId(null);
         showToast('Payment failed. Please try again.', 'error');
@@ -87,9 +88,9 @@ export default function CheckoutScreen() {
       showToast('Payment successful!', 'success');
 
       if (orderId) {
-        router.replace(`/profile/order/${orderId}`);
+        router.replace(`/checkout/success?orderId=${orderId}`);
       } else {
-        router.replace('/profile/orders');
+        router.replace('/checkout/success');
       }
     } catch (err: any) {
       console.error('Payment verification failed:', err);
@@ -236,7 +237,6 @@ export default function CheckoutScreen() {
           email: user?.email || 'customer@example.com',
           contact: user?.phone || '9999999999',
           method: (isUpi ? 'upi' : undefined) as "upi" | undefined,
-          provider: isUpi ? paymentMethod : undefined,
         },
         theme: {
           color: '#EE0000',
@@ -255,7 +255,7 @@ export default function CheckoutScreen() {
         })
         .catch((error: any) => {
           console.log('Razorpay Native Error:', error);
-          handlePaymentError(error.description || 'Payment cancelled or failed');
+          handlePaymentError('Payment cancelled or failed.');
         });
 
     } catch (err: any) {
@@ -295,7 +295,7 @@ export default function CheckoutScreen() {
         <ThemedText style={styles.headerTitle}>Checkout</ThemedText>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         
         {/* Products Section */}
         <View style={styles.itemsList}>
@@ -410,7 +410,7 @@ export default function CheckoutScreen() {
           >
             <View style={styles.paymentLogoContainer}>
               <Image 
-                source={require('@/assets/images/razorpay.png')} 
+                source={require('@/assets/images/razorpaylogo.png')} 
                 style={styles.paymentLogoImg} 
                 resizeMode="contain"
               />
@@ -432,7 +432,7 @@ export default function CheckoutScreen() {
           >
             <View style={styles.paymentLogoContainer}>
               <Image 
-                source={require('@/assets/images/phonepay.png')} 
+                source={require('@/assets/images/phonepelogo.png')} 
                 style={styles.paymentLogoImg} 
                 resizeMode="contain"
               />
@@ -454,7 +454,7 @@ export default function CheckoutScreen() {
           >
             <View style={styles.paymentLogoContainer}>
               <Image 
-                source={require('@/assets/images/paytm.jpeg')} 
+                source={require('@/assets/images/paytmlogo.png')} 
                 style={styles.paymentLogoImg} 
                 resizeMode="contain"
               />
@@ -517,7 +517,9 @@ export default function CheckoutScreen() {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(15, insets.bottom) }]}>
         <View>
           <ThemedText style={styles.bottomTotal}>₹{finalAmount.toFixed(2)}</ThemedText>
-          <ThemedText style={styles.bottomSub}>View price details</ThemedText>
+          <Pressable onPress={() => scrollViewRef.current?.scrollToEnd({ animated: true })}>
+            <ThemedText style={styles.bottomSub}>View price details</ThemedText>
+          </Pressable>
         </View>
         <Pressable style={styles.payBtn} onPress={handlePayment} disabled={isPaymentProcessing}>
           {isPaymentProcessing ? (
@@ -858,15 +860,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   paymentLogoContainer: {
-    width: 44,
-    height: 44,
+    width: 70,
+    height: 45,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   paymentLogoImg: {
-    width: 36,
-    height: 36,
+    width: 70,
+    height: 45,
   },
   paymentOptionInfo: {
     flex: 1,

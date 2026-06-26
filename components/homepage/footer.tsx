@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable, TextInput, Linking } from "react-native";
+import { StyleSheet, View, Pressable, TextInput, Linking, Image } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useEffect, useState } from "react";
@@ -55,6 +55,25 @@ export default function Footer() {
         <View style={styles.uspItem}>
           <IconSymbol name="lock.fill" size={24} color="#EE0000" />
           <ThemedText style={styles.uspText}>100% Secure</ThemedText>
+        </View>
+      </View>
+
+      {/* We Accept Section */}
+      <View style={styles.paymentContainer}>
+        <ThemedText style={styles.paymentTitle}>We Accept</ThemedText>
+        <View style={styles.paymentLogos}>
+          <View style={styles.logoWrapper}>
+            <Image source={require('@/assets/images/visa.png')} style={styles.paymentImage} resizeMode="contain" />
+          </View>
+          <View style={styles.logoWrapper}>
+            <Image source={require('@/assets/images/master-card.png')} style={styles.paymentImage} resizeMode="contain" />
+          </View>
+          <View style={styles.logoWrapper}>
+            <Image source={require('@/assets/images/rupay.png')} style={styles.paymentImage} resizeMode="contain" />
+          </View>
+          <View style={styles.logoWrapper}>
+            <Image source={require('@/assets/images/upi.png')} style={styles.paymentImage} resizeMode="contain" />
+          </View>
         </View>
       </View>
 
@@ -241,7 +260,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#333',
-    marginBottom: 30,
+    marginBottom: 20,
     marginHorizontal: 20,
   },
   uspItem: {
@@ -337,5 +356,36 @@ const styles = StyleSheet.create({
     color: "#0080FE",
     fontWeight: "bold",
     fontSize: 20,
+  },
+  paymentContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  paymentTitle: {
+    fontSize: 14,
+    color: '#FFF',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: 'bold',
+  },
+  paymentLogos: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 15,
+  },
+  logoWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    padding: 5,
+    width: 50,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  paymentImage: {
+    width: '100%',
+    height: '100%',
   },
 });

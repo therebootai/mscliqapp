@@ -15,8 +15,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import Toast from '@/components/ui/Toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function RootLayout() {
+  usePushNotifications();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const _hasHydrated = useCartStore((state) => state._hasHydrated);
@@ -37,6 +39,7 @@ export default function RootLayout() {
       <DrawerProvider>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ title: 'Login' }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="wishlist" options={{ title: 'Wishlist', headerBackTitle: 'Back' }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />

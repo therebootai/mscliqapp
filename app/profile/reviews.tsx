@@ -85,7 +85,7 @@ export default function MyReviewsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Stack.Screen options={{ title: 'My Reviews', headerShown: true }} />
       
       <FlatList

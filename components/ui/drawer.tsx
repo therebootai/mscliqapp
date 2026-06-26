@@ -59,7 +59,7 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
 
   const menuItems = [
     { label: 'Home', icon: 'house.fill', route: '/' },
-    { label: 'Catgory', icon: 'square.grid.2x2', route: '/category' },
+    { label: 'Category', icon: 'square.grid.2x2', route: '/categories' },
     { label: 'Account', icon: 'person.fill', route: '/account' },
     { label: 'Cart', icon: 'cart.fill', route: '/cart' },
     { label: 'Wishlist', icon: 'heart', route: '/wishlist' },

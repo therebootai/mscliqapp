@@ -146,7 +146,7 @@ export default function ReviewFormScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Stack.Screen 
         options={{ 
           title: reviewId ? 'Edit Review' : 'Write Review', 
