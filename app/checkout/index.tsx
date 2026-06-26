@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, TextInput, ActivityIndicator, AppState, AppStateStatus, Alert, Image } from 'react-native';
 import { Stack, useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
@@ -9,10 +9,11 @@ import { useAddressStore } from '@/store/addressStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useAuthStore } from '@/store/authStore';
 import { calculateCartTotals } from '@/utils/taxCalculation';
-import { BASE_URL } from '@/config/api';
+import { BASE_URL, RAZORPAY_KEY_ID } from '@/config/api';
 import axios from 'axios';
 import AddressSelectionModal from '@/components/checkout/AddressSelectionModal';
 import CartItem from '@/components/cart/CartItem';
+import RazorpayCheckout from 'react-native-razorpay';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -25,13 +26,84 @@ export default function CheckoutScreen() {
     : cartItems;
   const { addresses, fetchAddresses } = useAddressStore();
   const { showToast } = useToastStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   
   const [couponCode, setCouponCode] = useState(appliedCoupon?.code || '');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
   const [showAddressModal, setShowAddressModal] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'phonepe' | 'paytm'>('razorpay');
+  const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && pendingOrderId) {
+        await checkOrderStatus(pendingOrderId);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [pendingOrderId]);
+
+  const checkOrderStatus = async (orderId: string) => {
+    try {
+      setIsPaymentProcessing(true);
+      const res = await axios.get(`${BASE_URL}/orders/me/${orderId}`);
+      const order = res.data.data;
+      if (order && order.orderStatus === 'processing') {
+        setPendingOrderId(null);
+        await useCartStore.getState().clearCart();
+        showToast('Payment successful! Order processed.', 'success');
+        router.replace(`/profile/order/${orderId}`);
+      } else if (order && order.orderStatus === 'payment_failed') {
+        setPendingOrderId(null);
+        showToast('Payment failed. Please try again.', 'error');
+      }
+    } catch (err) {
+      console.error('Error checking order status:', err);
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; orderId?: string }) => {
+    setIsPaymentProcessing(true);
+    try {
+      await axios.post(`${BASE_URL}/payments/verify`, {
+        razorpayOrderId: data.razorpayOrderId,
+        razorpayPaymentId: data.razorpayPaymentId,
+        razorpaySignature: data.razorpaySignature,
+      });
+
+      const orderId = data.orderId || pendingOrderId;
+      setPendingOrderId(null);
+      await useCartStore.getState().clearCart();
+      showToast('Payment successful!', 'success');
+
+      if (orderId) {
+        router.replace(`/profile/order/${orderId}`);
+      } else {
+        router.replace('/profile/orders');
+      }
+    } catch (err: any) {
+      console.error('Payment verification failed:', err);
+      showToast(err.response?.data?.message || 'Payment verification failed', 'error');
+    } finally {
+      setIsPaymentProcessing(false);
+    }
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPendingOrderId(null);
+    showToast(error || 'Payment failed', 'error');
+    setIsPaymentProcessing(false);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -109,13 +181,88 @@ export default function CheckoutScreen() {
     }
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!selectedAddress) {
       showToast('Please select an address first', 'error');
       return;
     }
-    // Razorpay flow will be added here
-    showToast('Payment integration coming next', 'info');
+    
+    setIsPaymentProcessing(true);
+    try {
+      // 1. Create order on backend
+      const orderData = {
+        items: items.map(item => ({
+          variantId: item.variantId,
+          quantity: item.quantity
+        })),
+        shippingAddress: {
+          fullName: selectedAddress.fullName,
+          phone: selectedAddress.phone,
+          addressLine1: selectedAddress.addressLine1,
+          addressLine2: selectedAddress.addressLine2 || '',
+          city: selectedAddress.city,
+          state: selectedAddress.state,
+          postalCode: selectedAddress.postalCode,
+          country: selectedAddress.country || 'India'
+        },
+        appliedCoupon: appliedCoupon?.code || undefined,
+        isCartCheckout: !buyNowVariantId
+      };
+
+      const orderRes = await axios.post(`${BASE_URL}/orders`, orderData);
+      const createdOrderId = orderRes.data.data.orderId;
+
+      // 2. Initiate payment on backend
+      const txnRes = await axios.post(`${BASE_URL}/payments/initiate`, {
+        orderId: createdOrderId
+      });
+      const { gatewayOrderId: rzpOrderId, amount: orderAmount } = txnRes.data.data;
+
+      // 3. Set order as pending to watch for AppState changes
+      setPendingOrderId(createdOrderId);
+      
+      // 4. Configure Razorpay SDK options
+      const isUpi = paymentMethod === 'phonepe' || paymentMethod === 'paytm';
+      
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: Math.round(orderAmount * 100), // paise
+        currency: 'INR',
+        name: 'MSCliq',
+        description: `Order Payment for ${createdOrderId}`,
+        order_id: rzpOrderId,
+        prefill: {
+          name: user?.name || 'Customer',
+          email: user?.email || 'customer@example.com',
+          contact: user?.phone || '9999999999',
+          method: (isUpi ? 'upi' : undefined) as "upi" | undefined,
+          provider: isUpi ? paymentMethod : undefined,
+        },
+        theme: {
+          color: '#EE0000',
+        },
+      };
+
+      // 5. Open Razorpay Native Checkout
+      RazorpayCheckout.open(options)
+        .then(async (response: any) => {
+          await handlePaymentSuccess({
+            razorpayOrderId: response.razorpay_order_id || rzpOrderId,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            orderId: createdOrderId
+          });
+        })
+        .catch((error: any) => {
+          console.log('Razorpay Native Error:', error);
+          handlePaymentError(error.description || 'Payment cancelled or failed');
+        });
+
+    } catch (err: any) {
+      console.error('Payment initiation error:', err);
+      showToast(err.response?.data?.message || 'Failed to initiate payment', 'error');
+      setIsPaymentProcessing(false);
+    }
   };
 
   if (items.length === 0) {
@@ -253,6 +400,77 @@ export default function CheckoutScreen() {
           )}
         </View>
 
+        {/* Payment Method Selection */}
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Select Payment Method</ThemedText>
+          
+          <Pressable 
+            style={[styles.paymentCard, paymentMethod === 'razorpay' && styles.paymentCardSelected]}
+            onPress={() => setPaymentMethod('razorpay')}
+          >
+            <View style={styles.paymentLogoContainer}>
+              <Image 
+                source={require('@/assets/images/razorpay.png')} 
+                style={styles.paymentLogoImg} 
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.paymentOptionInfo}>
+              <ThemedText style={styles.paymentOptionLabel}>Razorpay</ThemedText>
+              <ThemedText style={styles.paymentOptionSub}>Cards, UPI, Netbanking</ThemedText>
+            </View>
+            <View style={styles.radioContainer}>
+              <View style={[styles.radio, paymentMethod === 'razorpay' && styles.radioSelected]}>
+                {paymentMethod === 'razorpay' && <View style={styles.radioInner} />}
+              </View>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            style={[styles.paymentCard, paymentMethod === 'phonepe' && styles.paymentCardSelected]}
+            onPress={() => setPaymentMethod('phonepe')}
+          >
+            <View style={styles.paymentLogoContainer}>
+              <Image 
+                source={require('@/assets/images/phonepay.png')} 
+                style={styles.paymentLogoImg} 
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.paymentOptionInfo}>
+              <ThemedText style={styles.paymentOptionLabel}>PhonePe</ThemedText>
+              <ThemedText style={styles.paymentOptionSub}>Directly via PhonePe App</ThemedText>
+            </View>
+            <View style={styles.radioContainer}>
+              <View style={[styles.radio, paymentMethod === 'phonepe' && styles.radioSelected]}>
+                {paymentMethod === 'phonepe' && <View style={styles.radioInner} />}
+              </View>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            style={[styles.paymentCard, paymentMethod === 'paytm' && styles.paymentCardSelected]}
+            onPress={() => setPaymentMethod('paytm')}
+          >
+            <View style={styles.paymentLogoContainer}>
+              <Image 
+                source={require('@/assets/images/paytm.jpeg')} 
+                style={styles.paymentLogoImg} 
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.paymentOptionInfo}>
+              <ThemedText style={styles.paymentOptionLabel}>Paytm</ThemedText>
+              <ThemedText style={styles.paymentOptionSub}>UPI or Paytm Wallet</ThemedText>
+            </View>
+            <View style={styles.radioContainer}>
+              <View style={[styles.radio, paymentMethod === 'paytm' && styles.radioSelected]}>
+                {paymentMethod === 'paytm' && <View style={styles.radioInner} />}
+              </View>
+            </View>
+          </Pressable>
+        </View>
+
         {/* Price Details */}
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Price Details ({items.length} items)</ThemedText>
@@ -301,8 +519,12 @@ export default function CheckoutScreen() {
           <ThemedText style={styles.bottomTotal}>₹{finalAmount.toFixed(2)}</ThemedText>
           <ThemedText style={styles.bottomSub}>View price details</ThemedText>
         </View>
-        <Pressable style={styles.payBtn} onPress={handlePayment}>
-          <ThemedText style={styles.payBtnText}>Proceed to Pay</ThemedText>
+        <Pressable style={styles.payBtn} onPress={handlePayment} disabled={isPaymentProcessing}>
+          {isPaymentProcessing ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <ThemedText style={styles.payBtnText}>Proceed to Pay</ThemedText>
+          )}
         </Pressable>
       </View>
 
@@ -613,5 +835,73 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  paymentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderWidth: 1.5,
+    borderColor: '#e8e8e8',
+    borderRadius: 12,
+    marginTop: 12,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  paymentCardSelected: {
+    borderColor: '#EE0000',
+    backgroundColor: '#fffaf8',
+    shadowOpacity: 0.1,
+    elevation: 4,
+  },
+  paymentLogoContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  paymentLogoImg: {
+    width: 36,
+    height: 36,
+  },
+  paymentOptionInfo: {
+    flex: 1,
+  },
+  paymentOptionLabel: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#111',
+    marginBottom: 4,
+  },
+  paymentOptionSub: {
+    fontSize: 12,
+    color: '#777',
+    fontWeight: '500',
+  },
+  radioContainer: {
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioSelected: {
+    borderColor: '#EE0000',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#EE0000',
   },
 });

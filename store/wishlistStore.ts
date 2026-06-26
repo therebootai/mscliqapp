@@ -159,7 +159,7 @@ export const useWishlistStore = create<WishlistState>()(
       },
     }),
     {
-      name: 'pahadi-wishlist-storage-v3',
+      name: 'mscliq-wishlist-storage-v3',
       storage: createJSONStorage(() => SecureStore.zustandStorage),
       partialize: (state) => ({ items: state.items, isDirty: state.isDirty }),
       onRehydrateStorage: () => (state) => {

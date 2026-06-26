@@ -1,6 +1,8 @@
 export const API_BASE_URL = "https://api.mscliq.com/api/v1";
 export const BASE_URL = API_BASE_URL;
 
+export const RAZORPAY_KEY_ID = "rzp_live_SrdEGPK0DCNVpv"; // Replace with your real live key when ready
+
 export const ENDPOINTS = {
   PRODUCTS: `${API_BASE_URL}/products`,
   CATEGORIES: `${API_BASE_URL}/categories`,

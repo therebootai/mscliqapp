@@ -12,6 +12,7 @@ import RenderHtml from 'react-native-render-html';
 import { ENDPOINTS } from '@/config/api';
 import { useWishlistStore } from "@/store/wishlistStore";
 import { useCartStore } from "@/store/cartStore";
+import { useRouter } from 'expo-router';
 export interface ProductViewProps {
   data: any;
   onAddToCart?: () => void;
@@ -28,10 +29,17 @@ const TrustIcon = ({ icon, label }: { icon: any, label: string }) => (
 );
 
 export default function ProductView({ data, onAddToCart, onBuyNow }: ProductViewProps) {
+  const router = useRouter();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { currentVariant, siblingOptions, effectiveTax } = data;
   const product = currentVariant.productId;
+
+  const handleSelectVariant = (slug: string) => {
+    if (slug && slug !== currentVariant.slug) {
+      router.replace(`/product/${slug}`);
+    }
+  };
 
   const { items, updateQuantity, removeFromCart } = useCartStore();
   const cartItem = items.find(item => item.variantId === currentVariant?._id);
@@ -180,6 +188,46 @@ export default function ProductView({ data, onAddToCart, onBuyNow }: ProductView
               <ThemedText style={styles.brandText}>{product.brandId?.name || "Generic"}</ThemedText>
             )}
           </View>
+
+          {/* Sibling Options (Images) */}
+          {(siblingOptions && siblingOptions.length > 0) && (
+            <View style={styles.variantsSection}>
+              <ThemedText style={styles.variantSectionTitle}>Available Options</ThemedText>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={styles.variantOptionsScroll}
+              >
+                {/* Active/Current Variant */}
+                <View style={[styles.variantImageCard, styles.variantImageCardSelected]}>
+                  {currentVariant.coverImage?.url ? (
+                    <Image 
+                      source={{ uri: currentVariant.coverImage.url }} 
+                      style={styles.variantThumbnail} 
+                      contentFit="contain" 
+                    />
+                  ) : null}
+                </View>
+
+                {/* Sibling Variants */}
+                {siblingOptions.map((option: any) => (
+                  <Pressable
+                    key={option._id}
+                    style={styles.variantImageCard}
+                    onPress={() => handleSelectVariant(option.slug)}
+                  >
+                    {option.coverImage?.url ? (
+                      <Image 
+                        source={{ uri: option.coverImage.url }} 
+                        style={styles.variantThumbnail} 
+                        contentFit="contain" 
+                      />
+                    ) : null}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Pincode Check */}
           <View style={styles.pincodeSection}>
@@ -681,5 +729,39 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#888',
     marginTop: 6,
-  }
+  },
+  variantsSection: {
+    marginVertical: 15,
+  },
+  variantSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 10,
+  },
+  variantOptionsScroll: {
+    paddingVertical: 5,
+  },
+  variantImageCard: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
+    overflow: 'hidden',
+    padding: 2,
+    marginRight: 12,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  variantImageCardSelected: {
+    borderWidth: 2,
+    borderColor: '#EE0000',
+  },
+  variantThumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+  },
 });
