@@ -76,7 +76,8 @@
           "color": "#FF0000"
         }
       ],
-      "./plugins/withAndroidQueries"
+      "./plugins/withAndroidQueries",
+      "./plugins/withAndroidConfigChanges"
     ],
     "experiments": {
       "typedRoutes": true,
