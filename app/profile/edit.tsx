@@ -20,26 +20,6 @@ import { BASE_URL } from '@/config/api';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuthStore } from '@/store/authStore';
 
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from 'react-native';
-import { router, Stack } from 'expo-router';
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import { BASE_URL } from '@/config/api';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useAuthStore } from '@/store/authStore';
-
 export default function EditProfileScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
