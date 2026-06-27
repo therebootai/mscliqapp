@@ -55,39 +55,6 @@ export default function ProfileScreen() {
     },
   ];
 
-  const supportItems = [
-    {
-      title: 'Help Center',
-      icon: 'questionmark.circle.fill',
-      route: '/info/help-center' as const,
-      color: '#8b5cf6',
-    },
-    {
-      title: 'Shipping Information',
-      icon: 'box.truck.fill',
-      route: '/info/shipping-info' as const,
-      color: '#14b8a6',
-    },
-    {
-      title: 'Returns & Refunds',
-      icon: 'arrow.uturn.left.circle.fill',
-      route: '/info/returns-refunds' as const,
-      color: '#f43f5e',
-    },
-    {
-      title: 'Privacy Policy',
-      icon: 'lock.shield.fill',
-      route: '/info/privacy-policy' as const,
-      color: '#64748b',
-    },
-    {
-      title: 'Terms of Service',
-      icon: 'doc.text.fill',
-      route: '/info/terms' as const,
-      color: '#64748b',
-    },
-  ];
-
   if (!isInitialized) {
     return (
       <View style={styles.centered}>
@@ -141,20 +108,6 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
 
-          <Text style={[styles.sectionTitle, { marginTop: 10 }]}>Support & Legal</Text>
-          {supportItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
-              onPress={() => router.push(item.route)}
-            >
-              <View style={[styles.iconContainer, { backgroundColor: `${item.color}15` }]}>
-                <IconSymbol name={item.icon as any} size={20} color={item.color} />
-              </View>
-              <Text style={styles.menuText}>{item.title}</Text>
-              <IconSymbol name="chevron.right" size={18} color="#9ca3af" />
-            </TouchableOpacity>
-          ))}
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
